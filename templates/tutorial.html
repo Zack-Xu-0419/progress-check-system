@@ -1,0 +1,74 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/base.css" crossorigin="anonymous">
+        <style>
+            .vertical-center {
+                  margin: 0;
+                  position: relative;
+                  top: 10%;
+            }
+            td {
+                color: white;
+                font-size: 15px;
+            }
+            th {
+                color: white;
+                font-weight: bold;
+                font-size: 25px;
+            }
+            table{
+                background-color: rgba(0, 0, 0, 0.3);
+            }
+            h1 {
+                color: white
+            }
+            h3{
+                color: white;
+                margin-top: 100px;
+                font-size: 25px;
+            }
+            .announce{
+                color: black;
+                background-color: rgba(255, 255, 255, 0.5);
+            }
+        </style>
+    </head>
+    <body style="background: gray">
+        <nav style="position:relative; z-index:1" class="navbar navbar-light bg-dark">
+            <div>
+                <a href="/display" style="color: aqua">House Points</a>
+                <a href="/" style="color: crimson; margin-left: 20px">Points Management</a>
+                <a href="/stManage" style="color: green; margin-left: 20px">Add Student</a>
+                <a href="/tutorial" style="color: white; margin-left: 20px">Tutorials</a>
+            </div>
+            <div style="width:40%"></div>
+            <div>
+                    <a href="/login">
+                        <button class="btn btn-primary">Sign In</button>
+                    </a>
+                    <a href="/signup">
+                        <button class="btn btn-primary">Sign Up</button>
+                    </a>
+            </div>
+            <div>
+                <form style="alignment-content:right" class="form-inline my-2 my-lg-0" method="post">
+                    <button class="btn btn-danger" type="submit" name="button" value="logout">Log Out</button>
+                </form>
+            </div>
+        </nav>
+        <h1>How to Add Points</h1>
+        <video controls src="/static/tutorials/signUp.mov" style="height: 30vh">
+            Sorry, your browser doesn't support embedded videos.
+        </video>
+
+        <h1>Tour of the Website</h1>
+        <video controls src="/static/tutorials/givePoints.mp4" style="height: 30vh">
+            Sorry, your browser doesn't support embedded videos.
+        </video>
+
+        <h1>How to Make the website easier to access</h1>
+        <video controls src="/static/tutorials/shortcut.mp4" style="height: 30vh">
+            Sorry, your browser doesn't support embedded videos.
+        </video>
+    </body>
+</html>

@@ -1,0 +1,213 @@
+<html>
+    <head>
+        <meta http-equiv="refresh" content="1800">
+        <link rel="stylesheet" href="/static/base.css" crossorigin="anonymous">
+        <title>_______</title>
+        <style>
+            h1 {
+                color: white
+            }
+            h3{
+                color: white;
+                margin-top: 100px;
+                font-size: 20px;
+            }
+            td {
+                color: white;
+                font-size: 15px;
+            }
+            th {
+                color: white;
+                font-weight: bold;
+                font-size: 25px;
+            }
+            table{
+                background-color: rgba(0, 0, 0, 0.3);
+            }
+            .announce{
+                color: black;
+                background-color: rgba(255, 255, 255, 0.5);
+            }
+            @keyframes moveone {
+              0% {left: -1800px;}
+              2% {left: 0px;}
+              20% {left: 0px;}
+            }
+            @keyframes movetwo {
+              0% {left: -1800px;}
+              20% {left: -1800px;}
+              23% {left: 0px}
+              54% {left: 0px}
+            }
+            @keyframes movethree {
+              0% {left: -1800px;}
+              57% {left: -1800px;}
+              62% {left: 0px;}
+              98% {left:0px;}
+            }
+            @keyframes movefour {
+              0% {left: -1800px;}
+              100% {left: -1800px;}
+            }
+
+
+            @keyframes moveones {
+              0% {left: -1800px;}
+              2% {left: 0px;}
+              15% {left: 0px;}
+            }
+            @keyframes movetwos {
+              0% {left: -1800px;}
+              15% {left: -1800px;}
+              17% {left: 0px}
+              30% {left: 0px}
+            }
+            @keyframes movethrees {
+              0% {left: -1800px;}
+              20% {left: -1800px;}
+              25% {left: 0px;}
+              78% {left:0px;}
+            }
+            @keyframes movefours {
+              0% {left: -1800px;}
+              78% {left: -1800px;}
+              80% {left: 0px;}
+            }
+
+            .bigTD{
+                height:20%;
+                font-size: 30px
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div>
+                <div id="one" style="background-image: url(/static/Christmas.jpg); background-size:cover; position: absolute; width: 100%; height: 100vh">
+                    <h1 class="announce">{{announcements}}</h1>
+                    <div class="container">
+                      <div class="row">
+                        <div class="col">
+                            <h3>1 - {{first}}, {{p1}} Points</h3>
+                            <img src="/static/{{first}}.jpg" class="vertical-center" height="300vw">
+                        </div>
+                        <div class="col">
+                            <h3>2 - {{second}}, {{p2}} Points</h3>
+                            <img src="/static/{{second}}.jpg" class="vertical-center" height="300vw">
+                        </div>
+                        <div class="col">
+                            <h3>3 - {{third}}, {{p3}} Points</h3>
+                            <img src="/static/{{third}}.jpg" class="vertical-center" height="300vw">
+                        </div>
+                        <div class="col">
+                            <h3>4 - {{fourth}}, {{p4}} Points</h3>
+                            <img src="/static/{{fourth}}.jpg" class="vertical-center" height="300vw">
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                <div id="two" style="position:absolute; width:100vw; height: 100vh; background-image: url(/static/3.jpg); background-size: cover; background-repeat: no-repeat">
+                    <div>
+                        <h1 class="announce">{{announcements}}</h1>
+                        <h1>Points</h1>
+                        <table class="table">
+                            <tr>
+                                <th>House</th>
+                                <th>Points</th>
+                                <th>Latest Updates</th>
+                            </tr>
+                            {% for house in houses %}
+                            <tr>
+                                <td class="bigTD">
+                                    {{house[0]}}
+                                </td>
+                                <td class="bigTD">
+                                    {{house[1]}}
+                                </td>
+                                <td class="bigTD">
+                                    {{house[2]}}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                <div id="three" style="position:absolute; width: 100vw; height:100vh; margin-top:0px; background-image: url(/static/City.jpg); background-size: cover; background-repeat: no-repeat">
+                    <div>
+                        <h1 class="announce">{{announcements}}</h1>
+                        <h1>History</h1>
+                            <table class="table">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Awarded For</th>
+                                    <th>Date</th>
+                                    <th>House</th>
+                                    <th>Points</th>
+                                </tr>
+                                {% for history in histories %}
+                                <tr>
+                                    <td>
+                                        {{history[0]}}
+                                    </td>
+                                    <td>
+                                        {{history[1]}}
+                                    </td>
+                                    <td>
+                                        {{history[2]}}
+                                    </td>
+                                    <td>
+                                        {{history[3]}}
+                                    </td>
+                                    <td>
+                                        {{history[4]}}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                    </div>
+                </div>
+                <div id="four" style="position: absolute; width: 100vw; height:100vh; margin-top:0px; background-image: url(/static/announcePicture.jpg); background-size: contain; background-repeat: no-repeat">
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+            window.onload = startAnimation
+            function startAnimation(){
+                console.log("asdfasdf")
+                if("{{announce}}" == "1"){
+                    myMove2()
+                }
+                if("{{announce}}" == "0"){
+                    myMove1()
+                }
+            }
+            function myMove1() {
+                console.log("0");
+                var firstPage = document.getElementById("one");
+                var secondPage = document.getElementById("two");
+                var thirdPage = document.getElementById("three");
+                var fourthPage = document.getElementById("four");
+                firstPage.style.animation = "moveone 30s infinite";
+                secondPage.style.animation = "movetwo 30s infinite";
+                thirdPage.style.animation = "movethree 30s infinite";
+                fourthPage.style.animation = "movefour 30s infinite";
+            }
+            function myMove2() {
+                console.log("1");
+                var firstPage = document.getElementById("one");
+                var secondPage = document.getElementById("two");
+                var thirdPage = document.getElementById("three");
+                var fourthPage = document.getElementById("four");
+                console.log(fourthPage)
+                firstPage.style.animation = "moveones 30s infinite";
+                secondPage.style.animation = "movetwos 30s infinite";
+                thirdPage.style.animation = "movethrees 30s infinite";
+                fourthPage.style.animation = "movefours 30s infinite";
+            }
+
+
+        </script>
+    </body>
+</html>
