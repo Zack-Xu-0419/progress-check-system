@@ -20,9 +20,21 @@ color = datetime.now().hour
 def index():
     return render_template("index.html")
 
-@app.route('/signup')
+@app.route('/signup', methods = ["GET", "POST"])
 def signup():
-    return render_template("signup.html")
+    if request.method == "GET":
+        return render_template("signup.html")
+    else:
+        username = request.form["username"]
+        password = request.form["password"]
+
+@app.route('/signin', methods = ["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        return render_template("signin.html")
+    else:
+        username = request.form["username"]
+        password = request.form["password"]
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
