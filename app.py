@@ -45,9 +45,12 @@ def signup():
     if request.method == "GET":
         return render_template("signup.html")
     else:
-        sqliteQuery("INSERT INTO users (username, password, points) VALUES (?, ?, 0)", (request.form["username"], request.form["password"]))
-        return "done"
-#   TODO Detects if username is already taken.
+        result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
+        if not result:
+            sqliteQuery("INSERT INTO users (username, password, points) VALUES (?, ?, 0)", (request.form["username"], request.form["password"]))
+            return "done"
+        else:
+            return render_template("signup.html", message="user exists")
 
 
 @app.route("/signin", methods=["GET", "POST"])
