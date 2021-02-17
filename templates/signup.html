@@ -10,10 +10,28 @@ Sign Up
 </style>
 {% endblock %}
 
+{% block script %}
+<script>
+    const p = document.getElementById("password");
+    const c = document.getElementById("confirm");
+    document.getElementById("signup-form").addEventListener("input", () => {
+        if (p.value !== c.value) {
+            p.setCustomValidity("Passwords do not match.");
+        } else if (p.validity.patternMismatch) {
+            p.setCustomValidity("The password has to be at least 6 characters long and contain at least one letter, one number and one special character (@$!%*#?&).");
+        } else {
+            p.setCustomValidity("");
+        }
+    }, false);
+</script>
+{% endblock %}
+
 {% block main %}
-<form method="post">
-    <input type="text" name="username" placeholder="Enter username">
-    <input type="password" name="password" placeholder="Enter password">
-    <button type="submit">Sign Up</button>
+<form method="post" id="signup-form">
+    <input required type="text" name="username" id="username" placeholder="Enter username">
+    <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
+        name="password" id="password" placeholder="Enter password">
+    <input required type="password" name="confirm" id="confirm" placeholder="Confirm password">
+    <button type="submit" id="signup-btn">Sign Up</button>
 </form>
 {% endblock %}

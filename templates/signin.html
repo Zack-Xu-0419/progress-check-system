@@ -5,12 +5,15 @@ Sign In
 {% endblock %}
 
 {% block style %}
+<style>
+
+</style>
 {% endblock %}
 
 {% block main %}
-<form method="post">
-    <input type="text" name="username" placeholder="Enter username">
-    <input type="password" name="password" placeholder="Enter password">
-    <button type="submit">Sign In</button>
+<form method="post" id="signin-form">
+    <input required type="text" name="username" id="username" placeholder="Enter username">
+    <input required type="password" name="password" id="password" placeholder="Enter password">
+    <button type="submit" id="signin-btn">Sign In</button>
 </form>
 {% endblock %}

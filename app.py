@@ -25,7 +25,7 @@ def sqliteGet(*query):
 def index():
     if request.method == "GET":
         if "user" in session:
-            return render_template("index.html", username=session["user"])
+            return render_template("index.html", message=session["user"])
         else:
             return redirect(url_for("signin"))
     else:
