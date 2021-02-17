@@ -21,9 +21,17 @@ def sqliteGet(*query):
     return result
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
-    return render_template("index.html")
+    if request.method == "GET":
+        if "user" in session:
+            return render_template("index.html", username=session["user"])
+        else:
+            return redirect(url_for("signin"))
+    else:
+        if request.form["button"] == "logout":
+            session.clear()
+            return redirect(url_for("index"))
 
 
 @app.route("/init")
@@ -53,7 +61,8 @@ def signin():
         elif result[0][1] != request.form["password"]:
             return "Incorrect password"
         else:
-            return "Logged In!"
+            session["user"] = result[0][0]
+            return redirect(url_for("index.html"))
 
 
 if __name__ == "__main__":
