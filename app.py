@@ -62,7 +62,7 @@ def signin():
             return "Incorrect password"
         else:
             session["user"] = result[0][0]
-            return redirect(url_for("index.html"))
+            return redirect(url_for("index"))
 
 
 if __name__ == "__main__":
