@@ -28,10 +28,22 @@ Sign Up
 
 {% block main %}
 <form method="post" id="signup-form">
-    <input required type="text" name="username" id="username" placeholder="Enter username">
-    <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
-        name="password" id="password" placeholder="Enter password">
-    <input required type="password" name="confirm" id="confirm" placeholder="Confirm password">
-    <button type="submit" id="signup-btn">Sign Up</button>
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input required type="text" class="form-control" name="username" id="username" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
+            class="form-control" name="password" id="password" aria-describedby="password-tip"
+            placeholder="Enter password">
+        <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
+            contain at least one letter, one number and one special character (@$!%*#?&).</small>
+    </div>
+    <div class="form-group">
+        <label for="confirm">Confirm password</label>
+        <input required type="password" class="form-control" name="confirm" id="confirm" placeholder="Confirm password">
+    </div>
+    <button type="submit" id="signup-btn" class="btn btn-primary">Sign Up</button>
 </form>
 {% endblock %}

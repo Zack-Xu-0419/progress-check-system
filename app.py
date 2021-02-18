@@ -27,17 +27,17 @@ def index():
         if "user" in session:
             return render_template("index.html", message=session["user"])
         else:
-            return redirect(url_for("signin"))
+            return render_template("index.html", message="Sign in or sign up")
     else:
         if request.form["button"] == "logout":
             session.clear()
-            return redirect(url_for("index"))
+            return render_template("index.html", message="Logged out")
 
 
 @app.route("/init")
 def init():
     sqliteQuery("CREATE TABLE IF NOT EXISTS users(username TEXT, password TEXT, points INT, status BOOL)")
-    return "done"
+    return "Done"
 
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -48,9 +48,9 @@ def signup():
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
             sqliteQuery("INSERT INTO users (username, password, points) VALUES (?, ?, 0)", (request.form["username"], request.form["password"]))
-            return "done"
+            return redirect(url_for("signin"))
         else:
-            return render_template("signup.html", message="user exists")
+            return render_template("signup.html", message="Username is already taken")
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -60,9 +60,9 @@ def signin():
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
-            return "Username doesn't exist"
+            return render_template("signin.html", message="Username doesn't exist")
         elif result[0][1] != request.form["password"]:
-            return "Incorrect password"
+            return render_template("signin.html", message="Incorrect password")
         else:
             session["user"] = result[0][0]
             return redirect(url_for("index"))

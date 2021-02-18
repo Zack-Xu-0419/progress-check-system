@@ -48,15 +48,18 @@
                     </div>
                 </li> -->
                 </ul>
+                {% if "user" not in session %}
                 <a href="/signin" class="nav-item-right">
                     <button class="btn btn-success">Sign In</button>
                 </a>
                 <a href="/signup" class="nav-item-right">
                     <button class="btn btn-primary">Sign Up</button>
                 </a>
+                {% else %}
                 <form class="nav-item-right form-inline my-2 my-lg-0" method="post">
                     <button name="button" value="logout" class="btn btn-danger" type="submit">Log Out</button>
                 </form>
+                {% endif %}
                 <!-- handle log in in future?
                 <div class="social-part">
                     <i class="fa fa-facebook" aria-hidden="true"></i>
