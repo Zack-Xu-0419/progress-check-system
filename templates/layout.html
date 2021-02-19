@@ -10,6 +10,34 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:400,500,500i,700,800i">
     <link rel="stylesheet" href="/static/base.css">
     {% block style %}{% endblock %}
+    <style>
+        {% if background == True %}
+        body{
+            background-image: url('/static/background.png')
+        }
+        {% endif %}
+        label{
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .form-control{
+            margin-left: 1vw;
+            width: 98vw;
+            max-width: 300px
+        }
+        #signup-form, #signin-form{
+            background-color: #dce8e7;
+            border-radius: 10px;
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        #signin-form{
+            height: 212px
+        }
+        #signup-form{
+            height: 358px
+        }
+    </style>
 </head>
 
 <body>

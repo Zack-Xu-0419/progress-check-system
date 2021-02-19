@@ -43,7 +43,7 @@ def init():
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "GET":
-        return render_template("signup.html")
+        return render_template("signup.html", background=True)
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
@@ -56,7 +56,7 @@ def signup():
 @app.route("/signin", methods=["GET", "POST"])
 def signin():
     if request.method == "GET":
-        return render_template("signin.html")
+        return render_template("signin.html", background=True)
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
