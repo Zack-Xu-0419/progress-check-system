@@ -1,7 +1,26 @@
+label {
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.form-control {
+  margin-left: 1vw;
+  width: 98vw;
+  max-width: 380px;
+}
+
 .nav-item-right {
   margin-right: 10px;
 }
 
 .navbar-light {
   background-color: #e3f2fd;
+}
+
+#signup-form,
+#signin-form {
+  background-color: #dce8e7;
+  border-radius: 10px;
+  max-width: 400px;
+  margin: 100px auto;
 }

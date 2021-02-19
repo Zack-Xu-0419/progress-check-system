@@ -6,7 +6,14 @@ Sign In
 
 {% block style %}
 <style>
+    #signin-btn {
+        float: right;
+        margin-right: 2px;
+    }
 
+    #signin-form {
+        height: 212px;
+    }
 </style>
 {% endblock %}
 
@@ -20,6 +27,6 @@ Sign In
         <label for="password">Password</label>
         <input required type="password" class="form-control" name="password" id="password" placeholder="Enter password">
     </div>
-    <button style="float: right; margin-right: 2px" type="submit" id="signin-btn" class="btn btn-primary">Sign In</button>
+    <button type="submit" id="signin-btn" class="btn btn-primary">Sign In</button>
 </form>
 {% endblock %}

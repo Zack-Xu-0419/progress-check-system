@@ -6,7 +6,19 @@ Sign Up
 
 {% block style %}
 <style>
+    #password-tip {
+        margin-left: 1vw;
+        margin-right: 1vw;
+    }
 
+    #signup-btn {
+        float: right;
+        margin-right: 2px;
+    }
+
+    #signup-form {
+        height: 358px;
+    }
 </style>
 {% endblock %}
 
@@ -37,13 +49,13 @@ Sign Up
         <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
             class="form-control" name="password" id="password" aria-describedby="password-tip"
             placeholder="Enter password">
-        <small style="margin-left: 1vw; margin-right: 1vw" id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
+        <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
             contain at least one letter, one number and one special character (@$!%*#?&).</small>
     </div>
     <div class="form-group">
         <label for="confirm">Confirm password</label>
         <input required type="password" class="form-control" name="confirm" id="confirm" placeholder="Confirm password">
     </div>
-    <button style="float: right; margin-right: 2px" type="submit" id="signup-btn" class="btn btn-primary">Sign Up</button>
+    <button type="submit" id="signup-btn" class="btn btn-primary">Sign Up</button>
 </form>
 {% endblock %}
