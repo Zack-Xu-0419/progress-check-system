@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from functools import wraps
 from flask import Flask, request, url_for, render_template, redirect, session
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
@@ -21,19 +22,33 @@ def sqliteGet(*query):
     return result
 
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "GET":
-        if "user" in session:
-            return render_template("index.html", message=session["user"])
-        else:
-            return render_template("index.html", message="Sign in or sign up")
-    else:
-        if request.form["button"] == "logout":
-            session.clear()
-            return render_template("index.html", message="Logged out")
-        else:
+def search_route(f):
+    @wraps(f)
+    def wrapper():
+        if request.method == "POST" and request.form["button"] == "search":
             return redirect(url_for("search", query=request.form["search"]))
+        return f()
+    return wrapper
+
+
+def logout(f):
+    @wraps(f)
+    def wrapper():
+        if request.method == "POST" and request.form["button"] == "logout":
+            session.clear()
+            return redirect(url_for("index"))
+        return f()
+    return wrapper
+
+
+@app.route("/", methods=["GET", "POST"])
+@search_route
+@logout
+def index():
+    if "user" in session:
+        return render_template("index.html", message=session["user"])
+    else:
+        return render_template("index.html", message="Sign in or sign up")
 
 
 @app.route("/init")
@@ -81,7 +96,9 @@ def settings():
         return render_template("settings.html", privateStatus=privateStatus, message="Update successful")
 
 
-@app.route("/search")
+@app.route("/search", methods=["GET", "POST"])
+@search_route
+@logout
 def search():
     testnames = ["Nathaniel", "Zeke", "Daniil", "Petr", "Cristian", "Filip", "Federico", "J.J.", "Mate", "Franko"]
     return render_template("search.html", names=testnames, query=request.args.get("query"))
