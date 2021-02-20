@@ -67,6 +67,16 @@ def signin():
             session["user"] = result[0][0]
             return redirect(url_for("index"))
 
+@app.route("/settings", methods= ["GET", "POST"])
+def settings():
+    if request.method == "GET":
+        sqliteGet("SELECT status FROM users WHERE username = ?", session["user"])
+        return render_template("settings.html", message=privateStatus)
+    else:
+        if request.form["private"]:
+            sqliteQuery("UPDATE users SET status = ? WHERE username = ?", True, session["user"])
+
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
