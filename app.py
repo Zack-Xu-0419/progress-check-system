@@ -50,7 +50,7 @@ def signup():
             sqliteQuery("INSERT INTO users (username, password, points) VALUES (?, ?, 0)", (request.form["username"], request.form["password"]))
             return redirect(url_for("signin"))
         else:
-            return render_template("signup.html", message="Username is already taken")
+            return render_template("signup.html", message="Username is already taken", background=True)
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -62,7 +62,7 @@ def signin():
         if not result:
             return render_template("signin.html", message="Username doesn't exist")
         elif result[0][1] != request.form["password"]:
-            return render_template("signin.html", message="Incorrect password")
+            return render_template("signin.html", message="Incorrect password", background=True)
         else:
             session["user"] = result[0][0]
             return redirect(url_for("index"))
