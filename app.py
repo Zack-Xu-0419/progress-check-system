@@ -32,11 +32,13 @@ def index():
         if request.form["button"] == "logout":
             session.clear()
             return render_template("index.html", message="Logged out")
+        else:
+            return redirect(url_for("search", query=request.form["search"]))
 
 
 @app.route("/init")
 def init():
-    sqliteQuery("CREATE TABLE IF NOT EXISTS users(username TEXT, password TEXT, points INT, status BOOL)")
+    sqliteQuery("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, points INT, private BOOL)")
     return "Done"
 
 
@@ -47,7 +49,7 @@ def signup():
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
-            sqliteQuery("INSERT INTO users (username, password, points, status) VALUES (?, ?, 0, False)", (request.form["username"], request.form["password"]))
+            sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.form["username"], request.form["password"]))
             return redirect(url_for("signin"))
         else:
             return render_template("signup.html", message="Username is already taken", background=True)
@@ -60,26 +62,29 @@ def signin():
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
-            return render_template("signin.html", message="Username doesn't exist")
+            return render_template("signin.html", message="Username doesn't exist", background=True)
         elif result[0][1] != request.form["password"]:
             return render_template("signin.html", message="Incorrect password", background=True)
         else:
             session["user"] = result[0][0]
             return redirect(url_for("index"))
 
-@app.route("/settings", methods= ["GET", "POST"])
+
+@app.route("/settings", methods=["GET", "POST"])
 def settings():
     if request.method == "GET":
-        privateStatus = sqliteGet("SELECT status FROM users WHERE username = ?", (session["user"],))
-        privateStatus = privateStatus[0][0]
-        return render_template("settings.html", privateStatus=privateStatus)
+        privateStatus = sqliteGet("SELECT private FROM users WHERE username = ?", (session["user"],))
+        return render_template("settings.html", privateStatus=privateStatus[0][0])
     else:
-        private = False
-        if request.form.get("private") == "on":
-            private = True
-        else:
-            private = False
-        sqliteQuery("UPDATE users SET status = ? WHERE username = ?", (private, session["user"]))
+        privateStatus = bool(request.form.get("private"))
+        sqliteQuery("UPDATE users SET private = ? WHERE username = ?", (privateStatus, session["user"]))
+        return render_template("settings.html", privateStatus=privateStatus, message="Update successful")
+
+
+@app.route("/search")
+def search():
+    testnames = ["Nathaniel", "Zeke", "Daniil", "Petr", "Cristian", "Filip", "Federico", "J.J.", "Mate", "Franko"]
+    return render_template("search.html", names=testnames, query=request.args.get("query"))
 
 
 if __name__ == "__main__":

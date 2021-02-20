@@ -1,9 +1,14 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Search results for
+Search results for {{query}}
 {% endblock %}
 
 {% block main %}
-
+<h1>
+    Search results for {{query}}:
+</h1>
+{% for name in names %}
+<p>{{name}}</p>
+{% endfor %}
 {% endblock %}
