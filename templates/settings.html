@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Account Settings
+{% endblock %}
+
+{% block main %}
+<form method="post" id="settings-form">
+    <label for="private">Make your account private</label>
+    <input type="checkbox" name="private" id="private">
+    <button type="submit" id="submit-btn">Update settings</button>
+</form>
+{% endblock %}
