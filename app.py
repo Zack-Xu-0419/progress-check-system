@@ -47,7 +47,7 @@ def signup():
     else:
         result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
         if not result:
-            sqliteQuery("INSERT INTO users (username, password, points) VALUES (?, ?, 0)", (request.form["username"], request.form["password"]))
+            sqliteQuery("INSERT INTO users (username, password, points, status) VALUES (?, ?, 0, False)", (request.form["username"], request.form["password"]))
             return redirect(url_for("signin"))
         else:
             return render_template("signup.html", message="Username is already taken", background=True)
@@ -70,12 +70,16 @@ def signin():
 @app.route("/settings", methods= ["GET", "POST"])
 def settings():
     if request.method == "GET":
-        sqliteGet("SELECT status FROM users WHERE username = ?", session["user"])
-        return render_template("settings.html", message=privateStatus)
+        privateStatus = sqliteGet("SELECT status FROM users WHERE username = ?", (session["user"],))
+        privateStatus = privateStatus[0][0]
+        return render_template("settings.html", privateStatus=privateStatus)
     else:
-        if request.form["private"]:
-            sqliteQuery("UPDATE users SET status = ? WHERE username = ?", True, session["user"])
-
+        private = False
+        if request.form.get("private") == "on":
+            private = True
+        else:
+            private = False
+        sqliteQuery("UPDATE users SET status = ? WHERE username = ?", (private, session["user"]))
 
 
 if __name__ == "__main__":
