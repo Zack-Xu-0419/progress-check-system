@@ -7,7 +7,11 @@ Account Settings
 {% block main %}
 <form method="post" id="settings-form">
     <label for="private">Make your account private</label>
+    {% if privateStatus %}
+    <input checked type="checkbox" name="private" id="private">
+    {% else %}
     <input type="checkbox" name="private" id="private">
+    {% endif %}
     <button type="submit" id="submit-btn">Update settings</button>
 </form>
 {% endblock %}
