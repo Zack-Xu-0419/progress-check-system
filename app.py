@@ -106,8 +106,10 @@ def settings():
 def search():
     query = request.args.get("query")
     result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", ("%" + query + "%",))
-    names = [user[0] for user in result if not user[1]]
-    return render_template("search.html", names=names, query=query)
+    names = [user[0] for user in result if not user[1] and user[0] != session["user"]]
+    if request.method == "GET":
+        return render_template("search.html", names=names, query=query)
+    return render_template("search.html", names=names, query=query, message="Successfully added {} as friend".format(request.form["button"]))
 
 
 if __name__ == "__main__":

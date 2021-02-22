@@ -9,10 +9,15 @@ Search results for {{query}}
     Search results for {{query}}:
 </h1>
 {% if not names %}
-<p>No results</p>
+<span>No results</span>
 {% else %}
-{% for name in names %}
-<p>{{name}}</p>
-{% endfor %}
+<form method="post">
+    {% for name in names %}
+    <div>
+        <span>{{name}}</span>
+        <button name="button" value={{name}} type="submit">Add friend</button>
+    </div>
+    {% endfor %}
+</form>
 {% endif %}
 {% endblock %}
