@@ -104,16 +104,10 @@ def settings():
 @signin_required(True)
 @search_logout
 def search():
-    result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", (("%" + request.args.get("query") + "%"),))
-    names = []
-    if not result:
-        print("User doesn't exist")
-    else:
-        for user in result:
-            if user[1] == 0:
-                names.append(user[0])
-    print(names)
-    return render_template("search.html", names=names, query=request.args.get("query"))
+    query = request.args.get("query")
+    result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", ("%" + query + "%",))
+    names = [user[0] for user in result if not user[1]]
+    return render_template("search.html", names=names, query=query)
 
 
 if __name__ == "__main__":

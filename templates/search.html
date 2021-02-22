@@ -8,7 +8,11 @@ Search results for {{query}}
 <h1>
     Search results for {{query}}:
 </h1>
+{% if not names %}
+<p>No results</p>
+{% else %}
 {% for name in names %}
 <p>{{name}}</p>
 {% endfor %}
+{% endif %}
 {% endblock %}
