@@ -1,12 +1,12 @@
 import os
 import sqlite3
 from functools import wraps
-from flask import Flask, request, url_for, render_template, redirect, session
+from flask import Flask, request, url_for, render_template, redirect, session, abort
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
-app.secret_key = "Hspt"
+app.secret_key = b"\xa3\x08\x94\xa2ED\x10\xa4@:6\xb6=i\xe8\xec"
 
 
 def sqliteQuery(*query):
@@ -22,18 +22,22 @@ def sqliteGet(*query):
     return result
 
 
-def search_route(f):
+def signin_required(signed_in):
+    def dec(f):
+        @wraps(f)
+        def wrapper():
+            if int(signed_in) + int("user" in session) == 1:
+                abort(403)
+            return f()
+        return wrapper
+    return dec
+
+
+def search_logout(f):
     @wraps(f)
     def wrapper():
         if request.method == "POST" and request.form["button"] == "search":
             return redirect(url_for("search", query=request.form["search"]))
-        return f()
-    return wrapper
-
-
-def logout(f):
-    @wraps(f)
-    def wrapper():
         if request.method == "POST" and request.form["button"] == "logout":
             session.clear()
             return redirect(url_for("index"))
@@ -42,13 +46,11 @@ def logout(f):
 
 
 @app.route("/", methods=["GET", "POST"])
-@search_route
-@logout
+@search_logout
 def index():
     if "user" in session:
         return render_template("index.html", message=session["user"])
-    else:
-        return render_template("index.html", message="Sign in or sign up")
+    return render_template("index.html", message="Sign in or sign up")
 
 
 @app.route("/init")
@@ -58,47 +60,49 @@ def init():
 
 
 @app.route("/signup", methods=["GET", "POST"])
+@signin_required(False)
 def signup():
     if request.method == "GET":
         return render_template("signup.html", background=True)
+    result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
+    if not result:
+        sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.form["username"], request.form["password"]))
+        return redirect(url_for("signin"))
     else:
-        result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
-        if not result:
-            sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.form["username"], request.form["password"]))
-            return redirect(url_for("signin"))
-        else:
-            return render_template("signup.html", message="Username is already taken", background=True)
+        return render_template("signup.html", message="Username is already taken", background=True)
 
 
 @app.route("/signin", methods=["GET", "POST"])
+@signin_required(False)
 def signin():
     if request.method == "GET":
         return render_template("signin.html", background=True)
+    result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
+    if not result:
+        return render_template("signin.html", message="Username doesn't exist", background=True)
+    elif result[0][1] != request.form["password"]:
+        return render_template("signin.html", message="Incorrect password", background=True)
     else:
-        result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
-        if not result:
-            return render_template("signin.html", message="Username doesn't exist", background=True)
-        elif result[0][1] != request.form["password"]:
-            return render_template("signin.html", message="Incorrect password", background=True)
-        else:
-            session["user"] = result[0][0]
-            return redirect(url_for("index"))
+        session["user"] = result[0][0]
+        return redirect(url_for("index"))
 
 
 @app.route("/settings", methods=["GET", "POST"])
+@signin_required(True)
+@search_logout
 def settings():
     if request.method == "GET":
         privateStatus = sqliteGet("SELECT private FROM users WHERE username = ?", (session["user"],))
         return render_template("settings.html", privateStatus=privateStatus[0][0])
-    else:
+    if request.method == "POST" and request.form["button"] == "update":
         privateStatus = bool(request.form.get("private"))
         sqliteQuery("UPDATE users SET private = ? WHERE username = ?", (privateStatus, session["user"]))
         return render_template("settings.html", privateStatus=privateStatus, message="Update successful")
 
 
 @app.route("/search", methods=["GET", "POST"])
-@search_route
-@logout
+@signin_required(True)
+@search_logout
 def search():
     testnames = ["Nathaniel", "Zeke", "Daniil", "Petr", "Cristian", "Filip", "Federico", "J.J.", "Mate", "Franko"]
     return render_template("search.html", names=testnames, query=request.args.get("query"))
