@@ -100,8 +100,16 @@ def settings():
 @search_route
 @logout
 def search():
-    testnames = ["Nathaniel", "Zeke", "Daniil", "Petr", "Cristian", "Filip", "Federico", "J.J.", "Mate", "Franko"]
-    return render_template("search.html", names=testnames, query=request.args.get("query"))
+    result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", (("%" + request.args.get("query") + "%"),))
+    names = []
+    if not result:
+        print("User doesn't exist")
+    else:
+        for user in result:
+            if user[1] == 0:
+                names.append(user[0])
+    print(names)
+    return render_template("search.html", names=names, query=request.args.get("query"))
 
 
 if __name__ == "__main__":
