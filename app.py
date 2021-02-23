@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from functools import wraps
-from flask import Flask, request, url_for, render_template, redirect, session, abort
+from flask import Flask, request, url_for, render_template, redirect, session
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,7 +27,7 @@ def signin_required(signed_in):
         @wraps(f)
         def wrapper():
             if int(signed_in) + int("user" in session) == 1:
-                abort(403)
+                return redirect(url_for("index"))
             return f()
         return wrapper
     return dec
