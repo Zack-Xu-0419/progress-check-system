@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Group Management
+{% endblock %}
+
+{% block style %}
+<style>
+    #group-table {
+      background-color: #dce8e7;
+      border-radius: 10px;
+      width: 90vw;
+      max-width: 400px;
+      margin: 100px auto;
+    }
+    th, td {
+      height: 10vh;
+      font-size: 30px;
+      text-align: center;
+    }
+    td{
+      font-size: 20px;
+    }
+    .leftColumn {
+      border-right: 1px solid black;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<form method="post" id="settings-form">
+    <input name="groupName" placeholder="groupName">
+    <input name="password" placeholder="password">
+    <button name="button" value="createGroup">createGroup</button>
+
+    <h1>Existing Groups</h1>
+</form>
+<table id="group-table">
+        <thead>
+            <th style="width: 20%" class="leftColumn">
+                Group Name
+            </th>
+            <th style="width: 40%" class="leftColumn">
+                Members
+            </th>
+            <th>
+                Add?
+            </th>
+        </thead>
+    <tbody>
+        {% for group in groups %}
+        <tr>
+            <td class="leftColumn">
+                {{group[0]}}
+            </td>
+            <td class="leftColumn">
+                {{group[1]}}
+            </td>
+            <td>
+                <select>
+                    <option value="">
+                        Select a Friend to add
+                    </option>
+                    {% for friend in friends %}
+                    <option value="{{friend}}">
+                        {{friend}}
+                    </option>
+                    {% endfor %}
+                </select>
+                <form method="POST">
+                    <button type="submit" name="button" value="addToGroup">
+                        addToGroup
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

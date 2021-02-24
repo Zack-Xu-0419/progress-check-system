@@ -44,7 +44,6 @@ def search_logout(f):
         return f()
     return wrapper
 
-
 @app.route("/", methods=["GET", "POST"])
 @search_logout
 def index():
@@ -111,6 +110,14 @@ def search():
         return render_template("search.html", names=names, query=query)
     return render_template("search.html", names=names, query=query, message="Successfully added {} as friend".format(request.form["button"]))
 
+
+@app.route("/group")
+@signin_required(True)
+@search_logout
+def group():
+    testData = [("The Vagabond", "Nathan, Zack"), ("The Stony Brook School", "Zack, Eric")]
+    testFriends = ["Zack", "Nathan", "JARVIS", "Jerry"]
+    return render_template("group.html", groups=testData, friends=testFriends)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
