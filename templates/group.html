@@ -7,74 +7,133 @@ Group Management
 {% block style %}
 <style>
     #group-table {
-      background-color: #dce8e7;
-      border-radius: 10px;
-      width: 90vw;
-      max-width: 400px;
-      margin: 100px auto;
+        background-color: #dce8e7;
+        border-radius: 10px;
+        width: 90vw;
+        max-width: 400px;
+        margin: 100px auto;
     }
-    th, td {
-      height: 10vh;
-      font-size: 30px;
-      text-align: center;
+
+    th,
+    td {
+        height: 10vh;
+        font-size: 30px;
+        text-align: center;
     }
-    td{
-      font-size: 20px;
+
+    td {
+        font-size: 20px;
     }
-    .leftColumn {
-      border-right: 1px solid black;
+
+    .left-column {
+        border-right: 1px solid black;
     }
 </style>
 {% endblock %}
 
-{% block main %}
-<form method="post" id="settings-form">
-    <input name="groupName" placeholder="groupName">
-    <input name="password" placeholder="password">
-    <button name="button" value="createGroup">createGroup</button>
+{% block script %}
+<script>
+    function getJson(formArray) {
+        var formObj = {};
+        for (var i = 0; i < formArray.length; i++) {
+            formObj[formArray[i]["name"]] = formArray[i]["value"];
+        }
+        return JSON.stringify(formObj);
+    }
 
-    <h1>Existing Groups</h1>
+    $("#group-form").submit(function () {
+        $.ajax({
+            url: "group",
+            data: getJson($("#group-form").serializeArray()),
+            dataType: "json",
+            contentType: "application/json",
+            method: "POST",
+            success: function (response) {
+                switch (response.status) {
+                    case 0:
+                        window.location.reload();
+                        break;
+                    case 1:
+                        if (confirm("The group name " + $("#name").val() + " does not exist. Are you sure that you want to create a group?")) {
+                            $.ajax({
+                                url: "group/create",
+                                data: getJson($("#group-form").serializeArray()),
+                                dataType: "json",
+                                contentType: "application/json",
+                                method: "POST",
+                                success: function () {
+                                    window.location.reload();
+                                },
+                                error: function (jqXHR, status, error) {
+                                    alert("Error: " + [status, error].filter(Boolean).join(", ") + "\nPlease try again.");
+                                }
+                            });
+                        }
+                        break;
+                    case 2:
+                        alert("You are already a member of the group " + $("#name").val() + ".");
+                        break;
+                    case 3:
+                        alert("Incorrect password.");
+                        break;
+                }
+            },
+            error: function (jqXHR, status, error) {
+                alert("Error: " + [status, error].filter(Boolean).join(", ") + "\nPlease try again.");
+            }
+        });
+        return false;
+    });
+</script>
+{% endblock %}
+
+{% block main %}
+<h1>Join group. If the group does not exist, it will be created.</h1>
+<form method="post" id="group-form">
+    <div class="form-group">
+        <label for="name">Group name</label>
+        <input autofocus required type="text" class="form-control" name="name" id="name" placeholder="Enter group name">
+    </div>
+    <div class="form-group">
+        <label for="password">Group password</label>
+        <input required type="password" class="form-control" name="password" id="password"
+            placeholder="Enter group password">
+    </div>
+    <button type="submit" name="submit" value="submit" id="submit-btn" class="btn btn-primary">Join or create
+        group</button>
 </form>
+<h1>Your groups</h1>
 <table id="group-table">
-        <thead>
-            <th style="width: 20%" class="leftColumn">
-                Group Name
-            </th>
-            <th style="width: 40%" class="leftColumn">
-                Members
-            </th>
-            <th>
-                Add?
-            </th>
-        </thead>
+    <thead>
+        <th style="width: 20%" class="left-column">
+            Group name
+        </th>
+        <th style="width: 40%" class="left-column">
+            Group members
+        </th>
+        <th>
+            Action
+        </th>
+    </thead>
     <tbody>
-        {% for group in groups %}
-        <tr>
-            <td class="leftColumn">
-                {{group[0]}}
-            </td>
-            <td class="leftColumn">
-                {{group[1]}}
-            </td>
-            <td>
-                <select>
-                    <option value="">
-                        Select a Friend to add
-                    </option>
-                    {% for friend in friends %}
-                    <option value="{{friend}}">
-                        {{friend}}
-                    </option>
-                    {% endfor %}
-                </select>
-                <form method="POST">
-                    <button type="submit" name="button" value="addToGroup">
-                        addToGroup
+        <form method="post">
+            {% for group in session["groups"] %}
+            <tr>
+                <td class="left-column">
+                    {{group[0]}}
+                </td>
+                <td class="left-column">
+                    {{", ".join(group[1])}}
+                </td>
+                <td>
+                    <button type="submit" name="leave" value="{{group[0]}}"
+                        onclick="return confirm('Are you sure that you want to leave {{group[0]}}?');">
+                        Leave group
                     </button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </form>
     </tbody>
 </table>
 {% endblock %}

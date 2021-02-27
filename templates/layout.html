@@ -35,13 +35,13 @@
                         <a class="nav-link" href="/settings">Settings</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="/group">Group Management</a>
+                        </li>
+                        <li class="nav-item">
                         <form method="post">
                             <input required type="text" name="search" id="searchbar" placeholder="Search users...">
                             <button name="button" value="search" type="submit">Search</button>
                         </form>
-                    </li>
-                    <li>
-                        <a href="/group" class="nav-link">Group Management</a>
                     </li>
                     {% endif %}
                     <!-- <li class="nav-item dropdown dmenu">
@@ -80,12 +80,6 @@
                     <button name="button" value="logout" class="btn btn-danger" type="submit">Log Out</button>
                 </form>
                 {% endif %}
-                <!-- handle log in in future?
-                <div class="social-part">
-                    <i class="fa fa-facebook" aria-hidden="true"></i>
-                    <i class="fa fa-twitter" aria-hidden="true"></i>
-                    <i class="fa fa-instagram" aria-hidden="true"></i>
-                </div> -->
             </div>
         </nav>
     </div>

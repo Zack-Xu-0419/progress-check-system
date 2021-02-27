@@ -15,7 +15,17 @@ Search results for {{query}}
     {% for name in names %}
     <div>
         <span>{{name}}</span>
-        <button name="button" value={{name}} type="submit">Add friend</button>
+        <select>
+            <option disabled selected>Please select a group</option>
+            {% for group in session["groups"] %}
+            {% if name in group[1] %}
+            <option disabled>{{group[0]}}</option>
+            {% else %}
+            <option>{{group[0]}}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+        <button name="button" value={{name}} type="submit">Invite user to group</button>
     </div>
     {% endfor %}
 </form>

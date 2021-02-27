@@ -1,7 +1,8 @@
 import os
+import ast
 import sqlite3
 from functools import wraps
-from flask import Flask, request, url_for, render_template, redirect, session
+from flask import Flask, request, url_for, render_template, redirect, session, json
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,13 +37,15 @@ def signin_required(signed_in):
 def search_logout(f):
     @wraps(f)
     def wrapper():
-        if request.method == "POST" and request.form["button"] == "search":
-            return redirect(url_for("search", query=request.form["search"]))
-        if request.method == "POST" and request.form["button"] == "logout":
-            session.clear()
-            return redirect(url_for("index"))
+        if request.method == "POST" and not request.is_json and "button" in request.form:
+            if request.form["button"] == "search":
+                return redirect(url_for("search", query=request.form["search"]))
+            if request.form["button"] == "logout":
+                session.clear()
+                return redirect(url_for("index"))
         return f()
     return wrapper
+
 
 @app.route("/", methods=["GET", "POST"])
 @search_logout
@@ -54,7 +57,7 @@ def index():
 
 @app.route("/init")
 def init():
-    sqliteQuery("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, points INT, private BOOL)")
+    sqliteQuery("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, points INT, private BOOL); CREATE TABLE IF NOT EXISTS groups (name TEXT, password TEXT, members TEXT)")
     return "Done"
 
 
@@ -63,12 +66,11 @@ def init():
 def signup():
     if request.method == "GET":
         return render_template("signup.html", background=True)
-    result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
+    result = sqliteGet("SELECT username FROM users WHERE username = ?", (request.form["username"],))
     if not result:
         sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.form["username"], request.form["password"]))
         return redirect(url_for("signin"))
-    else:
-        return render_template("signup.html", message="Username is already taken", background=True)
+    return render_template("signup.html", message="Username is already taken", background=True)
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -76,14 +78,15 @@ def signup():
 def signin():
     if request.method == "GET":
         return render_template("signin.html", background=True)
-    result = sqliteGet("SELECT * FROM users WHERE username = ?", (request.form["username"],))
+    result = sqliteGet("SELECT username, password FROM users WHERE username = ?", (request.form["username"],))
     if not result:
         return render_template("signin.html", message="Username doesn't exist", background=True)
-    elif result[0][1] != request.form["password"]:
+    if result[0][1] != request.form["password"]:
         return render_template("signin.html", message="Incorrect password", background=True)
-    else:
-        session["user"] = result[0][0]
-        return redirect(url_for("index"))
+    session["user"] = result[0][0]
+    groups = sqliteGet("SELECT name, members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
+    session["groups"] = [(group[0], ast.literal_eval(group[1])) for group in groups]
+    return redirect(url_for("index"))
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -111,13 +114,42 @@ def search():
     return render_template("search.html", names=names, query=query, message="Successfully added {} as friend".format(request.form["button"]))
 
 
-@app.route("/group")
+@app.route("/group", methods=["GET", "POST"])
 @signin_required(True)
 @search_logout
 def group():
-    testData = [("The Vagabond", "Nathan, Zack"), ("The Stony Brook School", "Zack, Eric")]
-    testFriends = ["Zack", "Nathan", "JARVIS", "Jerry"]
-    return render_template("group.html", groups=testData, friends=testFriends)
+    if request.method == "GET":
+        return render_template("group.html")
+    if request.method == "POST" and request.is_json:
+        result = sqliteGet("SELECT * FROM groups WHERE name = ?", (request.json["name"],))
+        if not result:
+            return json.dumps({"status": 1})
+        members = ast.literal_eval(result[0][2])
+        if session["user"] in members:
+            return json.dumps({"status": 2})
+        if result[0][1] != request.json["password"]:
+            return json.dumps({"status": 3})
+        members.append(session["user"])
+        sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), result[0][0]))
+        session["groups"].append((result[0][0], members))
+        session.modified = True
+        return json.dumps({"status": 0})
+    result = sqliteGet("SELECT members FROM groups WHERE name = ?", (request.form["leave"],))[0][0]
+    members = ast.literal_eval(result)
+    members.remove(session["user"])
+    sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["leave"]))
+    session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
+    session.modified = True
+    return render_template("group.html")
+
+
+@app.route("/group/create", methods=["POST"])
+def group_create():
+    sqliteQuery("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (request.json["name"], request.json["password"], repr([session["user"]])))
+    session["groups"].append((request.json["name"], [session["user"]]))
+    session.modified = True
+    return json.dumps({"status": 0})
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")

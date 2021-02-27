@@ -24,9 +24,9 @@ Sign Up
 
 {% block script %}
 <script>
-    const p = document.getElementById("password");
-    const c = document.getElementById("confirm");
-    document.getElementById("signup-form").addEventListener("input", () => {
+    var p = document.getElementById("password");
+    var c = document.getElementById("confirm");
+    document.getElementById("signup-form").addEventListener("input", function () {
         if (p.value !== c.value) {
             p.setCustomValidity("Passwords do not match.");
         } else if (p.validity.patternMismatch) {
@@ -42,7 +42,8 @@ Sign Up
 <form method="post" id="signup-form">
     <div class="form-group">
         <label for="username">Username</label>
-        <input required type="text" class="form-control" name="username" id="username" placeholder="Enter username">
+        <input autofocus required type="text" class="form-control" name="username" id="username"
+            placeholder="Enter username">
     </div>
     <div class="form-group">
         <label for="password">Password</label>
