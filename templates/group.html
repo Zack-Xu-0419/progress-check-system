@@ -6,11 +6,16 @@ Group Management
 
 {% block style %}
 <style>
-    #group-table {
+    #group-table,
+    #invite-table
+    {
         background-color: #dce8e7;
         border-radius: 10px;
         width: 90vw;
         max-width: 400px;
+    }
+
+    #group-table{
         margin: 100px auto;
     }
 
@@ -27,6 +32,10 @@ Group Management
 
     .left-column {
         border-right: 1px solid black;
+    }
+
+    .th-invite{
+        max-width: 380px;
     }
 </style>
 {% endblock %}
@@ -70,20 +79,25 @@ Group Management
 {% endblock %}
 
 {% block main %}
-<h1>Join group. If the group does not exist, it will be created.</h1>
-<form id="group-form">
-    <div class="form-group">
-        <label for="name">Group name</label>
-        <input autofocus required type="text" class="form-control" name="name" id="name" placeholder="Enter group name">
-    </div>
-    <div class="form-group">
-        <label for="password">Group password</label>
-        <input required type="password" class="form-control" name="password" id="password"
-            placeholder="Enter group password">
-    </div>
-    <button type="submit" name="submit" value="submit" id="submit-btn" class="btn btn-primary">Join or create
-        group</button>
-</form>
+<table id="invite-table">
+    <thead>
+        <th class="th-invite" style="width: 30%">Invitation</th>
+        <th class="th-invite">Action</th>
+    </thead>
+    <tbody>
+    {% for invitation in session["invitations"] %}
+        <tr>
+            <td>
+                {{invitation[0]}} invited you to {{invitation[1]}}
+            </td>
+            <td>
+                <button name="accept" value="{{invitation[1]}}">Accept</button>
+                <button name="reject" value="{{invitation[1]}}">Reject</button>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
 <h1>Your groups</h1>
 <table id="group-table">
     <thead>
@@ -118,4 +132,18 @@ Group Management
         </form>
     </tbody>
 </table>
+<h1>Join group. If the group does not exist, it will be created.</h1>
+<form id="group-form">
+    <div class="form-group">
+        <label for="name">Group name</label>
+        <input autofocus required type="text" class="form-control" name="name" id="name" placeholder="Enter group name">
+    </div>
+    <div class="form-group">
+        <label for="password">Group password</label>
+        <input required type="password" class="form-control" name="password" id="password"
+            placeholder="Enter group password">
+    </div>
+    <button type="submit" name="submit" value="submit" id="submit-btn" class="btn btn-primary">Join or create
+        group</button>
+</form>
 {% endblock %}

@@ -120,6 +120,11 @@ def search():
 @search_logout
 def group():
     if request.method == "GET":
+        # Test invitation Data [inviter, group name]:
+        testData = [["Jarvis", "The Avengers"], ["Zack", "The Vagabond"]]
+        session["invitations"] = testData
+        print(session["invitations"])
+
         return render_template("group.html")
     if request.method == "POST" and request.is_json:
         result = sqliteGet("SELECT * FROM groups WHERE name = ?", (request.json["name"],))
@@ -141,6 +146,7 @@ def group():
     sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["leave"]))
     session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
     session.modified = True
+
     return render_template("group.html")
     # What if the group has no members left?
 
