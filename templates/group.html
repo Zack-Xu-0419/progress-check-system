@@ -33,53 +33,35 @@ Group Management
 
 {% block script %}
 <script>
-    function getJson(formArray) {
-        var formObj = {};
-        for (var i = 0; i < formArray.length; i++) {
-            formObj[formArray[i]["name"]] = formArray[i]["value"];
-        }
-        return JSON.stringify(formObj);
-    }
-
-    $("#group-form").submit(function () {
+    $("#group-form").on("submit", function () {
         $.ajax({
             url: "group",
-            data: getJson($("#group-form").serializeArray()),
-            dataType: "json",
-            contentType: "application/json",
-            method: "POST",
+            data: getJson($(this)),
             success: function (response) {
                 switch (response.status) {
                     case 0:
                         window.location.reload();
                         break;
                     case 1:
-                        if (confirm("The group name " + $("#name").val() + " does not exist. Are you sure that you want to create a group?")) {
+                        if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
                             $.ajax({
                                 url: "group/create",
-                                data: getJson($("#group-form").serializeArray()),
-                                dataType: "json",
-                                contentType: "application/json",
-                                method: "POST",
+                                data: getJson($("#group-form")),
                                 success: function () {
                                     window.location.reload();
-                                },
-                                error: function (jqXHR, status, error) {
-                                    alert("Error: " + [status, error].filter(Boolean).join(", ") + "\nPlease try again.");
                                 }
                             });
                         }
                         break;
                     case 2:
-                        alert("You are already a member of the group " + $("#name").val() + ".");
+                        alert("You are already a member of the group \"" + $("#name").val() + "\".");
+                        $("#name").select();
                         break;
                     case 3:
                         alert("Incorrect password.");
+                        $("#password").val("").focus();
                         break;
                 }
-            },
-            error: function (jqXHR, status, error) {
-                alert("Error: " + [status, error].filter(Boolean).join(", ") + "\nPlease try again.");
             }
         });
         return false;
@@ -89,7 +71,7 @@ Group Management
 
 {% block main %}
 <h1>Join group. If the group does not exist, it will be created.</h1>
-<form method="post" id="group-form">
+<form id="group-form">
     <div class="form-group">
         <label for="name">Group name</label>
         <input autofocus required type="text" class="form-control" name="name" id="name" placeholder="Enter group name">
@@ -127,7 +109,7 @@ Group Management
                 </td>
                 <td>
                     <button type="submit" name="leave" value="{{group[0]}}"
-                        onclick="return confirm('Are you sure that you want to leave {{group[0]}}?');">
+                        onclick='return confirm("Are you sure that you want to leave \"{{group[0]}}\"?");'>
                         Leave group
                     </button>
                 </td>

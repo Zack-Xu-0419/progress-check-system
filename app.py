@@ -66,11 +66,11 @@ def init():
 def signup():
     if request.method == "GET":
         return render_template("signup.html", background=True)
-    result = sqliteGet("SELECT username FROM users WHERE username = ?", (request.form["username"],))
+    result = sqliteGet("SELECT username FROM users WHERE username = ?", (request.json["username"],))
     if not result:
-        sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.form["username"], request.form["password"]))
-        return redirect(url_for("signin"))
-    return render_template("signup.html", message="Username is already taken", background=True)
+        sqliteQuery("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.json["username"], request.json["password"]))
+        return json.dumps({"status": 0})
+    return json.dumps({"status": 1})
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -78,15 +78,15 @@ def signup():
 def signin():
     if request.method == "GET":
         return render_template("signin.html", background=True)
-    result = sqliteGet("SELECT username, password FROM users WHERE username = ?", (request.form["username"],))
+    result = sqliteGet("SELECT username, password FROM users WHERE username = ?", (request.json["username"],))
     if not result:
-        return render_template("signin.html", message="Username doesn't exist", background=True)
-    if result[0][1] != request.form["password"]:
-        return render_template("signin.html", message="Incorrect password", background=True)
+        return json.dumps({"status": 1})
+    if result[0][1] != request.json["password"]:
+        return json.dumps({"status": 2})
     session["user"] = result[0][0]
     groups = sqliteGet("SELECT name, members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
     session["groups"] = [(group[0], ast.literal_eval(group[1])) for group in groups]
-    return redirect(url_for("index"))
+    return json.dumps({"status": 0})
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -100,6 +100,7 @@ def settings():
         privateStatus = bool(request.form.get("private"))
         sqliteQuery("UPDATE users SET private = ? WHERE username = ?", (privateStatus, session["user"]))
         return render_template("settings.html", privateStatus=privateStatus, message="Update successful")
+    # Delete account
 
 
 @app.route("/search", methods=["GET", "POST"])
@@ -141,6 +142,7 @@ def group():
     session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
     session.modified = True
     return render_template("group.html")
+    # What if the group has no members left?
 
 
 @app.route("/group/create", methods=["POST"])

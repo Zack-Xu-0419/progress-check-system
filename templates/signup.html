@@ -24,9 +24,9 @@ Sign Up
 
 {% block script %}
 <script>
-    var p = document.getElementById("password");
-    var c = document.getElementById("confirm");
-    document.getElementById("signup-form").addEventListener("input", function () {
+    var p = $("#password");
+    var c = $("#confirm");
+    $("#signup-form").on("input", function () {
         if (p.value !== c.value) {
             p.setCustomValidity("Passwords do not match.");
         } else if (p.validity.patternMismatch) {
@@ -34,12 +34,27 @@ Sign Up
         } else {
             p.setCustomValidity("");
         }
-    }, false);
+    }).on("submit", function () {
+        $.ajax({
+            url: "signup",
+            data: getJson($(this)),
+            success: function (response) {
+                if (!response.status) {
+                    alert("Sign up successful. Please sign in.")
+                    window.location.replace("signin");
+                } else {
+                    alert("Username is already taken.");
+                    $("#username").select();
+                }
+            }
+        });
+        return false;
+    })
 </script>
 {% endblock %}
 
 {% block main %}
-<form method="post" id="signup-form">
+<form id="signup-form">
     <div class="form-group">
         <label for="username">Username</label>
         <input autofocus required type="text" class="form-control" name="username" id="username"
