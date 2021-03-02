@@ -7,15 +7,14 @@ Group Management
 {% block style %}
 <style>
     #group-table,
-    #invite-table
-    {
+    #invite-table {
         background-color: #dce8e7;
         border-radius: 10px;
         width: 90vw;
         max-width: 400px;
     }
 
-    #group-table{
+    #group-table {
         margin: 100px auto;
     }
 
@@ -34,7 +33,7 @@ Group Management
         border-right: 1px solid black;
     }
 
-    .th-invite{
+    .th-invite {
         max-width: 380px;
     }
 </style>
@@ -79,25 +78,31 @@ Group Management
 {% endblock %}
 
 {% block main %}
+{% if invitations %}
 <table id="invite-table">
     <thead>
         <th class="th-invite" style="width: 30%">Invitation</th>
         <th class="th-invite">Action</th>
     </thead>
     <tbody>
-    {% for invitation in session["invitations"] %}
-        <tr>
-            <td>
-                {{invitation[0]}} invited you to {{invitation[1]}}
-            </td>
-            <td>
-                <button name="accept" value="{{invitation[1]}}">Accept</button>
-                <button name="reject" value="{{invitation[1]}}">Reject</button>
-            </td>
-        </tr>
-    {% endfor %}
+        <form method="post">
+            {% for i in invitations %}
+            <tr>
+                <td>
+                    {{", ".join(i[0])}} invited you to "{{i[1]}}".
+                </td>
+                <td>
+                    <button type="submit" name="accept" value="{{i[1]}}" class="btn btn-success"
+                        onclick='return confirm("Are you sure that you want to accept your invitation to \"{{i[1]}}\"?");'>Accept</button>
+                    <button type="submit" name="reject" value="{{i[1]}}" class="btn btn-danger"
+                        onclick='return confirm("Are you sure that you want to reject your invitation to \"{{i[1]}}\"?");'>Reject</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </form>
     </tbody>
 </table>
+{% endif %}
 <h1>Your groups</h1>
 <table id="group-table">
     <thead>
@@ -122,7 +127,7 @@ Group Management
                     {{", ".join(group[1])}}
                 </td>
                 <td>
-                    <button type="submit" name="leave" value="{{group[0]}}"
+                    <button type="submit" class="btn btn-danger" name="leave" value="{{group[0]}}"
                         onclick='return confirm("Are you sure that you want to leave \"{{group[0]}}\"?");'>
                         Leave group
                     </button>
@@ -143,7 +148,6 @@ Group Management
         <input required type="password" class="form-control" name="password" id="password"
             placeholder="Enter group password">
     </div>
-    <button type="submit" name="submit" value="submit" id="submit-btn" class="btn btn-primary">Join or create
-        group</button>
+    <button type="submit" id="submit-btn" class="btn btn-primary">Join or create group</button>
 </form>
 {% endblock %}

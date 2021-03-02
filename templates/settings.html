@@ -6,13 +6,20 @@ Account Settings
 
 {% block main %}
 <form method="post" id="settings-form">
-    <label for="private">Make your account private</label>
-    {% if privateStatus %}
-    <input checked type="checkbox" name="private" id="private">
-    {% else %}
-    <input type="checkbox" name="private" id="private">
-    {% endif %}
-    <button name="button" value="update" type="submit" id="submit-btn">Update settings</button>
-    <button name="button" value="delete" type="submit" id="submit-btn">Delete Account</button>
+    <div>
+        <label for="private">Make your account private</label>
+        {% if privateStatus %}
+        <input checked type="checkbox" name="private" id="private">
+        {% else %}
+        <input type="checkbox" name="private" id="private">
+        {% endif %}
+        <button name="button" value="update" type="submit" class="btn btn-primary">Update settings</button>
+    </div>
+    <div>
+        <span>Delete account. This action is irreversible.</span>
+        <button name="button" value="delete" type="submit" class="btn btn-danger"
+            onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
+            Account</button>
+    </div>
 </form>
 {% endblock %}

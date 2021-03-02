@@ -57,7 +57,7 @@ def index():
 
 @app.route("/init")
 def init():
-    sqliteQuery("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, points INT, private BOOL); CREATE TABLE IF NOT EXISTS groups (name TEXT, password TEXT, members TEXT)")
+    sqliteQuery("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT, points INT, private BOOL); CREATE TABLE IF NOT EXISTS groups (name TEXT, password TEXT, members TEXT, pending TEXT)")
     return "Done"
 
 
@@ -100,19 +100,28 @@ def settings():
         privateStatus = bool(request.form.get("private"))
         sqliteQuery("UPDATE users SET private = ? WHERE username = ?", (privateStatus, session["user"]))
         return render_template("settings.html", privateStatus=privateStatus, message="Update successful")
-    # Delete account
+    sqliteQuery("DELETE FROM users WHERE username = ?", (session["user"],))
+    session.clear()
+    return redirect(url_for("index"))
 
 
 @app.route("/search", methods=["GET", "POST"])
 @signin_required(True)
 @search_logout
 def search():
-    query = request.args.get("query")
-    result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", ("%" + query + "%",))
-    names = [user[0] for user in result if not user[1] and user[0] != session["user"]]
     if request.method == "GET":
+        query = request.args.get("query")
+        result = sqliteGet("SELECT username, private FROM users WHERE username LIKE ?", ("%" + query + "%",))
+        names = [user[0] for user in result if not user[1] and user[0] != session["user"]]
         return render_template("search.html", names=names, query=query)
-    return render_template("search.html", names=names, query=query, message="Successfully added {} as friend".format(request.form["button"]))
+    for user, group in request.json.items():
+        result = ast.literal_eval(sqliteGet("SELECT pending FROM groups WHERE name = ?", (group,))[0][0])
+        if (any(i[1] == user for i in result)):
+            pending = [[i[0] + [session["user"]], i[1]] if session["user"] not in i[0] and i[1] == user else i for i in result]
+        else:
+            pending = result + [[[session["user"]], user]]
+        sqliteQuery("UPDATE groups SET pending = ? WHERE name = ?", (repr(pending), group))
+    return json.dumps({"status": 0})
 
 
 @app.route("/group", methods=["GET", "POST"])
@@ -120,12 +129,9 @@ def search():
 @search_logout
 def group():
     if request.method == "GET":
-        # Test invitation Data [inviter, group name]:
-        testData = [["Jarvis", "The Avengers"], ["Zack", "The Vagabond"]]
-        session["invitations"] = testData
-        print(session["invitations"])
-
-        return render_template("group.html")
+        result = sqliteGet("SELECT name, pending FROM groups WHERE pending LIKE ?", ("%'" + session["user"] + "'%",))
+        invitations = [[[i for i in ast.literal_eval(p) if i[1] == session["user"]][0][0], n] for n, p in result]
+        return render_template("group.html", invitations=invitations)
     if request.method == "POST" and request.is_json:
         result = sqliteGet("SELECT * FROM groups WHERE name = ?", (request.json["name"],))
         if not result:
@@ -140,15 +146,25 @@ def group():
         session["groups"].append((result[0][0], members))
         session.modified = True
         return json.dumps({"status": 0})
-    result = sqliteGet("SELECT members FROM groups WHERE name = ?", (request.form["leave"],))[0][0]
-    members = ast.literal_eval(result)
-    members.remove(session["user"])
-    sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["leave"]))
-    session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
-    session.modified = True
-
+    if request.method == "POST" and "leave" in request.form:
+        members = ast.literal_eval(sqliteGet("SELECT members FROM groups WHERE name = ?", (request.form["leave"],))[0][0])
+        members.remove(session["user"])
+        sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["leave"]))
+        session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
+        session.modified = True
+        return render_template("group.html")
+        # What if the group has no members left?
+    form = request.form.get("accept") or request.form.get("reject")
+    result = ast.literal_eval(sqliteGet("SELECT pending FROM groups WHERE name = ?", (form,))[0][0])
+    pending = [i for i in result if i[1] != session["user"]]
+    sqliteQuery("UPDATE groups SET pending = ? WHERE name = ?", (repr(pending), form))
+    if "accept" in request.form:
+        members = ast.literal_eval(sqliteGet("SELECT members FROM groups WHERE name = ?", (request.form["accept"],))[0][0])
+        members.append(session["user"])
+        sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["accept"]))
+        session["groups"].append((request.form["accept"], members))
+        session.modified = True
     return render_template("group.html")
-    # What if the group has no members left?
 
 
 @app.route("/group/create", methods=["POST"])

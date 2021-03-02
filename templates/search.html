@@ -4,6 +4,38 @@
 Search results for {{query}}
 {% endblock %}
 
+{% block script %}
+<script>
+    $("#search-form").on("submit", function () {
+        var users = {};
+        $(".user").each(function () {
+            if (!$(this).val()) {
+                users[$(this).attr("name")] = $(this).val();
+            }
+        });
+        if ($.isEmptyObject(users)) {
+            alert("Please select users.");
+        } else {
+            var message = "Please confirm:";
+            for (var key in users) {
+                message += "\nInvite " + key + " to " + users[key];
+            }
+            message += "\nAre you sure that you want to invite these users?";
+            if (confirm(message)) {
+                $.ajax({
+                    url: "search",
+                    data: JSON.stringify(users),
+                    success: function () {
+                        alert("Operation successful.");
+                    }
+                });
+            }
+        }
+        return false;
+    });
+</script>
+{% endblock %}
+
 {% block main %}
 <h1>
     Search results for {{query}}:
@@ -11,23 +43,23 @@ Search results for {{query}}
 {% if not names %}
 <span>No results</span>
 {% else %}
-<form method="post">
+<form id="search-form">
     {% for name in names %}
     <div>
         <span>{{name}}</span>
-        <select>
-            <option disabled selected>Please select a group</option>
+        <select class="user" name="{{name}}">
+            <option disabled selected hidden value>Please select a group</option>
             {% for group in session["groups"] %}
             {% if name in group[1] %}
-            <option disabled>{{group[0]}}</option>
+            <option disabled value="{{group[0]}}">{{group[0]}}</option>
             {% else %}
-            <option>{{group[0]}}</option>
+            <option value="{{group[0]}}">{{group[0]}}</option>
             {% endif %}
             {% endfor %}
         </select>
-        <button name="button" value={{name}} type="submit">Invite user to group</button>
     </div>
     {% endfor %}
+    <button type="submit" class="btn btn-primary">Invite users to group</button>
 </form>
 {% endif %}
 {% endblock %}
