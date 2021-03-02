@@ -152,7 +152,7 @@ def group():
         sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["leave"]))
         session["groups"] = [i for i in session["groups"] if i[0] != request.form["leave"]]
         session.modified = True
-        return render_template("group.html")
+        return redirect(url_for("group"))
         # What if the group has no members left?
     form = request.form.get("accept") or request.form.get("reject")
     result = ast.literal_eval(sqliteGet("SELECT pending FROM groups WHERE name = ?", (form,))[0][0])
@@ -164,7 +164,7 @@ def group():
         sqliteQuery("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.form["accept"]))
         session["groups"].append((request.form["accept"], members))
         session.modified = True
-    return render_template("group.html")
+    return redirect(url_for("group"))
 
 
 @app.route("/group/create", methods=["POST"])
