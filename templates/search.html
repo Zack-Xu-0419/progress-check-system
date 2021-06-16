@@ -9,7 +9,7 @@ Search results for {{query}}
     $("#search-form").on("submit", function () {
         var users = {};
         $(".user").each(function () {
-            if (!$(this).val()) {
+            if ($(this).val()) {
                 users[$(this).attr("name")] = $(this).val();
             }
         });
@@ -18,9 +18,9 @@ Search results for {{query}}
         } else {
             var message = "Please confirm:";
             for (var key in users) {
-                message += "\nInvite " + key + " to " + users[key];
+                message += "\nInvite " + key + " to \"" + users[key] + "\"\n";
             }
-            message += "\nAre you sure that you want to invite these users?";
+            message += "Are you sure that you want to invite these users?";
             if (confirm(message)) {
                 $.ajax({
                     url: "search",
@@ -43,23 +43,26 @@ Search results for {{query}}
 {% if not names %}
 <span>No results</span>
 {% else %}
-<form id="search-form">
-    {% for name in names %}
-    <div>
-        <span>{{name}}</span>
-        <select class="user" name="{{name}}">
-            <option disabled selected hidden value>Please select a group</option>
-            {% for group in session["groups"] %}
-            {% if name in group[1] %}
-            <option disabled value="{{group[0]}}">{{group[0]}}</option>
-            {% else %}
-            <option value="{{group[0]}}">{{group[0]}}</option>
-            {% endif %}
-            {% endfor %}
-        </select>
-    </div>
-    {% endfor %}
+{% for name in names %}
+<div>
+    {% if name != session["user"] %}
+    <span>{{name}}</span>
+    {% else %}
+    <span>{{name}} (yourself)</span>
+    <!-- <select class="user" name="{{name}}">
+        <option disabled selected value>Please select a group</option>
+        {% for group in session["groups"] %}
+        {% if name in group[1] %}
+        <option disabled value="{{group[0]}}">{{group[0]}}</option>
+        {% else %}
+        <option value="{{group[0]}}">{{group[0]}}</option>
+        {% endif %}
+        {% endfor %}
+    </select> -->
+</div>
+{% endfor %}
+<!-- <form id="search-form">
     <button type="submit" class="btn btn-primary">Invite users to group</button>
-</form>
+</form> -->
 {% endif %}
 {% endblock %}

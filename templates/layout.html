@@ -8,21 +8,19 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/base.css">
     {% block style %}{% endblock %}
-    {% if background %}
     <style>
         body {
             background-image: url("/static/background.png");
             background-size: cover;
         }
     </style>
-    {% endif %}
 </head>
 
 <body>
     <div>
         <nav class="navbar-expand-sm navbar-light">
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar" aria-controls="navbar"
-                aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar"
+                aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbar">
@@ -36,8 +34,8 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/group">Group Management</a>
-                        </li>
-                        <li class="nav-item">
+                    </li>
+                    <li class="nav-item">
                         <form method="post">
                             <input required type="text" name="search" id="searchbar" placeholder="Search users...">
                             <button name="button" value="search" type="submit">Search</button>
