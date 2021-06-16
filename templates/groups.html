@@ -43,7 +43,7 @@ Group Management
 <script>
     $("#group-form").on("submit", function () {
         $.ajax({
-            url: "group",
+            url: "groups",
             data: getJson($(this)),
             success: function (response) {
                 switch (response.status) {
@@ -53,8 +53,8 @@ Group Management
                     case 1:
                         if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
                             $.ajax({
-                                url: "group/create",
-                                data: getJson($("#group-form")),
+                                url: "groups",
+                                data: getJson({ ...$("#group-form"), "confirm": true }),
                                 success: function () {
                                     window.location.reload();
                                 }
@@ -118,7 +118,7 @@ Group Management
     </thead>
     <tbody>
         <form method="post">
-            {% for group in session["groups"] %}
+            {% for group in groups %}
             <tr>
                 <td class="left-column">
                     {{group[0]}}

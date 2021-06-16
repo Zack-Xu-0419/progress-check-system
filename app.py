@@ -133,7 +133,7 @@ def search():
     if request.method == "GET":
         query = request.args.get("query")
         result = sqlite_get("SELECT username, private FROM users WHERE username LIKE ?", ("%" + query + "%",))
-        names = [user[0] for user in result if not user[1] and user[0] != session["user"]]
+        names = [user[0] for user in result if not user[1]]
         return render_template("search.html", names=names, query=query)
     for user, group in request.json.items():
         result = literal_eval(sqlite_get("SELECT pending FROM groups WHERE name = ?", (group,))[0][0])
@@ -178,7 +178,7 @@ def groups():
             return json.dumps({"status": 3})  # Incorrect password
         members.append(session["user"])
         sqlite_execute("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.json["name"]))
-        return json.dumps({"status": 0, "groups": get_groups()})
+        return json.dumps({"status": 0})
 
     # Leave group
     if request.method == "POST" and "leave" in request.form:
