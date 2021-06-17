@@ -35,47 +35,49 @@ Account Settings
 {% endblock %}
 
 {% block main %}
-<div>
-    <form method="post" id="private-form">
-        <h3>Private setting</h3>
-        <label for="private">Private account</label>
-        {% if private %}
-        <input checked type="checkbox" name="private" id="private">
-        {% else %}
-        <input type="checkbox" name="private" id="private">
-        {% endif %}
-        <button name="button" value="update" type="submit" class="btn btn-primary">Update private setting</button>
-    </form>
-</div>
-<div>
-    <form id="change-form">
-        <h3>Change password</h3>
-        <div class="form-group">
-            <label for="old">Old password</label>
-            <input required type="password" class="form-control" name="old" id="old" placeholder="Enter old password">
-        </div>
-        <div class="form-group">
-            <label for="new">New password</label>
-            <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
-                class="form-control" name="new" id="new" aria-describedby="password-tip"
-                placeholder="Enter new password">
-            <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
-                contain at least one letter, one number and one special character (@$!%*#?&).</small>
-        </div>
-        <div class="form-group">
-            <label for="confirm">Confirm password</label>
-            <input required type="password" class="form-control" name="confirm" id="confirm"
-                placeholder="Confirm password">
-        </div>
-        <button name="button" value="change" type="submit" class="btn btn-primary">Change Password</button>
-    </form>
-</div>
-<div>
-    <form method="post" id="delete-form">
-        <h3>Delete account. This action is irreversible.</h3>
-        <button name="button" value="delete" type="submit" class="btn btn-danger"
-            onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
-            Account</button>
-    </form>
+<div class="options">
+    <div>
+        <form method="post" id="private-form">
+            <h3>Private setting</h3>
+            <label for="private">Private account</label>
+            {% if private %}
+            <input checked type="checkbox" name="private" id="private">
+            {% else %}
+            <input type="checkbox" name="private" id="private">
+            {% endif %}
+            <button name="button" value="update" type="submit" class="btn btn-primary">Update private setting</button>
+        </form>
+    </div>
+    <div>
+        <form id="change-form">
+            <h3>Change password</h3>
+            <div class="form-group">
+                <label for="old">Old password</label>
+                <input required type="password" class="form-control" name="old" id="old" placeholder="Enter old password">
+            </div>
+            <div class="form-group">
+                <label for="new">New password</label>
+                <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
+                    class="form-control" name="new" id="new" aria-describedby="password-tip"
+                    placeholder="Enter new password">
+                <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
+                    contain at least one letter, one number and one special character (@$!%*#?&).</small>
+            </div>
+            <div class="form-group">
+                <label for="confirm">Confirm password</label>
+                <input required type="password" class="form-control" name="confirm" id="confirm"
+                    placeholder="Confirm password">
+            </div>
+            <button name="button" value="change" type="submit" class="btn btn-primary">Change Password</button>
+        </form>
+    </div>
+    <div>
+        <form method="post" id="delete-form">
+            <h3>Delete account. This action is irreversible.</h3>
+            <button name="button" value="delete" type="submit" class="btn btn-danger"
+                onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
+                Account</button>
+        </form>
+    </div>
 </div>
 {% endblock %}
