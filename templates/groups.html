@@ -44,7 +44,7 @@ Group Management
     $("#group-form").on("submit", function () {
         $.ajax({
             url: "groups",
-            data: getJson($(this)),
+            data: JSON.stringify(getJSON($(this))),
             success: function (response) {
                 switch (response.status) {
                     case 0:
@@ -54,7 +54,7 @@ Group Management
                         if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
                             $.ajax({
                                 url: "groups",
-                                data: getJson({ ...$("#group-form"), "confirm": true }),
+                                data: JSON.stringify({ ...getJSON($("#group-form")), "confirm": true }),
                                 success: function () {
                                     window.location.reload();
                                 }
@@ -78,31 +78,30 @@ Group Management
 {% endblock %}
 
 {% block main %}
-<div class="blur_content_behind">
 {% if invitations %}
-    <table id="invite-table">
-        <thead>
-            <th class="th-invite" style="width: 30%">Invitation</th>
-            <th class="th-invite">Action</th>
-        </thead>
-        <tbody>
-            <form method="post">
-                {% for i in invitations %}
-                <tr>
-                    <td>
-                        {{", ".join(i[0])}} invited you to "{{i[1]}}".
-                    </td>
-                    <td>
-                        <button type="submit" name="accept" value="{{i[1]}}" class="btn btn-success"
-                            onclick='return confirm("Are you sure that you want to accept your invitation to \"{{i[1]}}\"?");'>Accept</button>
-                        <button type="submit" name="reject" value="{{i[1]}}" class="btn btn-danger"
-                            onclick='return confirm("Are you sure that you want to reject your invitation to \"{{i[1]}}\"?");'>Reject</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </form>
-        </tbody>
-    </table>
+<table id="invite-table">
+    <thead>
+        <th class="th-invite" style="width: 30%">Invitation</th>
+        <th class="th-invite">Action</th>
+    </thead>
+    <tbody>
+        <form method="post">
+            {% for i in invitations %}
+            <tr>
+                <td>
+                    {{", ".join(i[0])}} invited you to "{{i[1]}}".
+                </td>
+                <td>
+                    <button type="submit" name="accept" value="{{i[1]}}" class="btn btn-success"
+                        onclick='return confirm("Are you sure that you want to accept your invitation to \"{{i[1]}}\"?");'>Accept</button>
+                    <button type="submit" name="reject" value="{{i[1]}}" class="btn btn-danger"
+                        onclick='return confirm("Are you sure that you want to reject your invitation to \"{{i[1]}}\"?");'>Reject</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </form>
+    </tbody>
+</table>
 {% endif %}
 <h1>Your groups</h1>
 <table id="group-table">
@@ -151,5 +150,4 @@ Group Management
     </div>
     <button type="submit" id="submit-btn" class="btn btn-primary">Join or create group</button>
 </form>
-</div>
 {% endblock %}

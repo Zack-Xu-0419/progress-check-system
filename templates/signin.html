@@ -22,7 +22,7 @@ Sign In
     $("#signin-form").on("submit", function () {
         $.ajax({
             url: "signin",
-            data: getJson($(this)),
+            data: JSON.stringify(getJSON($(this))),
             success: function (response) {
                 switch (response.status) {
                     case 0:

@@ -1,9 +1,7 @@
-import os
-import crypt
 import sqlite3
 from functools import wraps
 from ast import literal_eval
-from hmac import compare_digest
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, url_for, render_template, redirect, session, json
 
 DB = "./database.db"
@@ -47,17 +45,18 @@ def search_logout(f):
 
 def get_groups():
     groups = sqlite_get("SELECT name, members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
-    return [(group[0], literal_eval(group[1])) for group in groups]
+    return [(group[0], [i if i != session["user"] else i + " (yourself)" for i in literal_eval(group[1])]) for group in groups]
 
 
 app = Flask(__name__)
 app.secret_key = b"\xa3\x08\x94\xa2ED\x10\xa4@:6\xb6=i\xe8\xec"
 
-if not os.path.exists(DB):
-    os.mknod(DB)
+with open(DB, "a"):
+    pass
 
 sqlite_execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
 sqlite_execute("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
+
 
 @app.route("/", methods=["GET", "POST"])
 @search_logout
@@ -74,8 +73,7 @@ def signup():
         return render_template("signup.html")
     result = sqlite_get("SELECT username FROM users WHERE username = ?", (request.json["username"],))
     if not result:
-        crypt_pwd = crypt.crypt(request.json["password"], crypt.METHOD_SHA512)
-        sqlite_execute("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.json["username"], crypt_pwd))
+        sqlite_execute("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)", (request.json["username"], generate_password_hash(request.json["password"])))
         return json.dumps({"status": 0})
     return json.dumps({"status": 1})
 
@@ -88,9 +86,7 @@ def signin():
     result = sqlite_get("SELECT username, password FROM users WHERE username = ?", (request.json["username"],))
     if not result:
         return json.dumps({"status": 1})
-    crypt_pwd = result[0][1]
-    pwd = request.json["password"]
-    if not compare_digest(crypt.crypt(pwd, crypt_pwd), crypt_pwd):
+    if not check_password_hash(result[0][1], request.json["password"]):
         return json.dumps({"status": 2})
     session["user"] = result[0][0]
     return json.dumps({"status": 0})
@@ -118,10 +114,10 @@ def settings():
         return redirect(url_for("index"))
 
     # Update password
-    crypt_pwd = sqlite_get("SELECT password FROM users WHERE username = ?", (session["user"],))[0][0]
-    if not compare_digest(crypt.crypt(request.json["old"], crypt_pwd), crypt_pwd):
+    hashed_password = sqlite_get("SELECT password FROM users WHERE username = ?", (session["user"],))[0][0]
+    if not check_password_hash(hashed_password, request.json["old"]):
         return json.dumps({"status": 1})
-    sqlite_execute("UPDATE users SET password = ? WHERE username = ?", (crypt.crypt(request.json["new"], crypt.METHOD_SHA512), session["user"]))
+    sqlite_execute("UPDATE users SET password = ? WHERE username = ?", (generate_password_hash(request.json["new"]), session["user"]))
     return json.dumps({"status": 0})
 
 
@@ -168,13 +164,13 @@ def groups():
             if "confirm" not in request.json:
                 return json.dumps({"status": 1})  # Confirm create
             # Create group
-            sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (request.json["name"], crypt.crypt(request.json["password"], crypt.METHOD_SHA512), repr([session["user"]])))
+            sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
             return json.dumps({"status": 0})
         # Join group
         members = literal_eval(result[0][1])
         if session["user"] in members:
             return json.dumps({"status": 2})  # Already a member
-        if not compare_digest(crypt.crypt(request.json["password"], result[0][0]), result[0][0]):
+        if not check_password_hash(result[0][0], request.json["password"]):
             return json.dumps({"status": 3})  # Incorrect password
         members.append(session["user"])
         sqlite_execute("UPDATE groups SET members = ? WHERE name = ?", (repr(members), request.json["name"]))

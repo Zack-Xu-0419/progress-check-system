@@ -24,30 +24,32 @@ Sign Up
 
 {% block script %}
 <script>
-    var p = $("#password");
-    var c = $("#confirm");
+    var p = $("#password")[0];
+    var c = $("#confirm")[0];
     $("#signup-form").on("input", function () {
-        if (p.value !== c.value) {
-            p.setCustomValidity("Passwords do not match.");
-        } else if (p.validity.patternMismatch) {
+        if (p.validity.patternMismatch) {
             p.setCustomValidity("The password has to be at least 6 characters long and contain at least one letter, one number and one special character (@$!%*#?&).");
         } else {
             p.setCustomValidity("");
         }
     }).on("submit", function () {
-        $.ajax({
-            url: "signup",
-            data: getJson($(this)),
-            success: function (response) {
-                if (!response.status) {
-                    alert("Sign up successful. Please sign in.")
-                    window.location.replace("signin");
-                } else {
-                    alert("Username is already taken.");
-                    $("#username").select();
+        if (p.value !== c.value) {
+            alert("Passwords do not match.");
+        } else {
+            $.ajax({
+                url: "signup",
+                data: JSON.stringify(getJSON($(this))),
+                success: function (response) {
+                    if (!response.status) {
+                        alert("Sign up successful. Please sign in.")
+                        window.location.replace("signin");
+                    } else {
+                        alert("Username is already taken.");
+                        $("#username").select();
+                    }
                 }
-            }
-        });
+            });
+        }
         return false;
     });
 </script>

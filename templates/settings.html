@@ -6,36 +6,38 @@ Account Settings
 
 {% block script %}
 <script>
-    var p = $("#new");
-    var c = $("#confirm");
+    var p = $("#new")[0];
+    var c = $("#confirm")[0];
     $("#change-form").on("input", function () {
-        if (p.value !== c.value) {
-            p.setCustomValidity("Passwords do not match.");
-        } else if (p.validity.patternMismatch) {
+        if (p.validity.patternMismatch) {
             p.setCustomValidity("The password has to be at least 6 characters long and contain at least one letter, one number and one special character (@$!%*#?&).");
         } else {
             p.setCustomValidity("");
         }
     }).on("submit", function () {
-        $.ajax({
-            url: "settings",
-            data: getJson($(this)),
-            success: function (response) {
-                if (!response.status) {
-                    alert("Operation successful. Please use your new password to sign in next time.");
-                } else {
-                    alert("The old password is incorrect.");
-                    $("#old").val("").focus();
+        if (p.value !== c.value) {
+            alert("Passwords do not match.");
+        } else {
+            $.ajax({
+                url: "settings",
+                data: JSON.stringify(getJSON($(this))),
+                success: function (response) {
+                    if (!response.status) {
+                        alert("Operation successful. Please use your new password to sign in next time.");
+                    } else {
+                        alert("The old password is incorrect.");
+                        $("#old").val("").focus();
+                    }
                 }
-            }
-        });
+            });
+        }
         return false;
     });
 </script>
 {% endblock %}
 
 {% block main %}
-<div class="blur_content_behind center">
+<div class="center">
     <div>
         <form method="post" id="private-form">
             <h3>Private setting</h3>
