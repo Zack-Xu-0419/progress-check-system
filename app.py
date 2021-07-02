@@ -3,9 +3,9 @@ from functools import wraps
 from ast import literal_eval
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, url_for, render_template, redirect, session, json
+import os
 
 DB = "./database.db"
-
 
 def sqlite_execute(*query):
     conn = sqlite3.connect(DB)
@@ -62,7 +62,7 @@ sqlite_execute("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOIN
 @search_logout
 def index():
     if "user" in session:
-        return render_template("index.html", message=session["user"])
+        return render_template("index.html", message=session["user"], user=session["user"])
     return render_template("index.html", message="Sign in or sign up")
 
 
@@ -99,13 +99,13 @@ def settings():
     # GET
     if request.method == "GET":
         private = sqlite_get("SELECT private FROM users WHERE username = ?", (session["user"],))[0][0]
-        return render_template("settings.html", private=private)
+        return render_template("settings.html", private=private, user=session["user"])
 
     # Update private status
     if request.method == "POST" and request.form.get("button") == "update":
         private = bool(request.form.get("private"))
         sqlite_execute("UPDATE users SET private = ? WHERE username = ?", (private, session["user"]))
-        return render_template("settings.html", private=private, message="Update successful")
+        return render_template("settings.html", private=private, message="Update successful", user=session["user"])
 
     # Delete account
     if request.method == "POST" and request.form.get("button") == "delete":
@@ -119,6 +119,12 @@ def settings():
         return json.dumps({"status": 1})
     sqlite_execute("UPDATE users SET password = ? WHERE username = ?", (generate_password_hash(request.json["new"]), session["user"]))
     return json.dumps({"status": 0})
+
+@app.route("/tasks", methods=["GET", "POST"])
+@signin_required(True)
+@search_logout
+def tasks():
+    return render_template("tasks.html")
 
 
 @app.route("/search", methods=["GET", "POST"])
@@ -155,7 +161,7 @@ def groups():
             except IndexError:
                 continue
             invitations.append((invitors, n))
-        return render_template("groups.html", groups=get_groups(), invitations=invitations)
+        return render_template("groups.html", user=session["user"], groups=get_groups(), invitations=invitations)
 
     # Create or join group
     if request.method == "POST" and request.is_json:
@@ -194,6 +200,18 @@ def groups():
         members.append(session["user"])
         sqlite_execute("UPDATE groups SET members = ? WHERE name = ?", (repr(members), form))
     return redirect(url_for("groups"))
+
+
+@app.route("/upload-image", methods=["GET", "POST"])
+def upload_image():
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1
+    # Update Background Image
+    if request.method == "POST":
+        print(request.files)
+        if request.files:
+            image = request.files["image"]
+            image.save(os.path.join("./static/userData/bgi", (str(session["user"]) + " backgroundImg")))
+            return render_template("settings.html", user=session["user"])
 
 
 app.run(debug=True, host="0.0.0.0")

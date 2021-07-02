@@ -81,5 +81,12 @@ Account Settings
                 Account</button>
         </form>
     </div>
+    <div>
+        <h3>Upload Background</h3>
+        <form method="post" action="/upload-image" enctype="multipart/form-data">
+            <input type="file" id="image" name="image" accept="image/png, image/jpeg">
+            <button type="submit" class="btn btn-primary" name="button" value="backgroundImg">Submit</button>
+        </form>
+    </div>
 </div>
 {% endblock %}
