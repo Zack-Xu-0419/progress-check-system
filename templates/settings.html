@@ -33,14 +33,31 @@ Account Settings
         }
         return false;
     });
+    $("#background-form").on("submit", function () {
+        $.ajax({
+            url: "settings",
+            data: new FormData(this),
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                if (!response.status) {
+                    alert("Operation successful.");
+                    window.location.reload();
+                } else
+                    alert("Invalid image format. (Must be png or jpeg)");
+            }
+        });
+        return false;
+    });
 </script>
 {% endblock %}
 
 {% block main %}
 <div class="center">
     <div>
+        <h3>Private setting</h3>
         <form method="post" id="private-form">
-            <h3>Private setting</h3>
             <label for="private">Private account</label>
             {% if private %}
             <input checked type="checkbox" name="private" id="private">
@@ -50,20 +67,22 @@ Account Settings
             <button name="button" value="update" type="submit" class="btn btn-primary">Update private setting</button>
         </form>
     </div>
+    <hr>
     <div>
+        <h3>Change password</h3>
         <form id="change-form">
-            <h3>Change password</h3>
             <div class="form-group">
                 <label for="old">Old password</label>
-                <input required type="password" class="form-control" name="old" id="old" placeholder="Enter old password">
+                <input required type="password" class="form-control" name="old" id="old"
+                    placeholder="Enter old password">
             </div>
             <div class="form-group">
                 <label for="new">New password</label>
                 <input required pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$" type="password"
                     class="form-control" name="new" id="new" aria-describedby="password-tip"
                     placeholder="Enter new password">
-                <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long and
-                    contain at least one letter, one number and one special character (@$!%*#?&).</small>
+                <small id="password-tip" class="form-text text-muted">The password has to be at least 6 characters long
+                    and contain at least one letter, one number and one special character (@$!%*#?&).</small>
             </div>
             <div class="form-group">
                 <label for="confirm">Confirm password</label>
@@ -73,19 +92,28 @@ Account Settings
             <button name="button" value="change" type="submit" class="btn btn-primary">Change Password</button>
         </form>
     </div>
+    <hr>
     <div>
+        <h3>Upload custom background image</h3>
+        <form method="post" id="background-form" enctype="multipart/form-data">
+            <input required type="file" id="image" name="image" accept="image/png, image/jpeg" style="display: block;">
+            <label for="image-title">Image title</label>
+            <input required type="text" class="form-control" name="title" id="image-title"
+                placeholder="Enter image title">
+            <button type="submit" class="btn btn-primary" name="button" value="background">Submit</button>
+        </form>
+    </div>
+    <hr>
+    <div>
+        <h3>Manage background images</h3>
+    </div>
+    <hr>
+    <div>
+        <h3 style="color: red;">Delete account (This action is irreversible)</h3>
         <form method="post" id="delete-form">
-            <h3>Delete account. This action is irreversible.</h3>
             <button name="button" value="delete" type="submit" class="btn btn-danger"
                 onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
                 Account</button>
-        </form>
-    </div>
-    <div>
-        <h3>Upload Background</h3>
-        <form method="post" action="/upload-image" enctype="multipart/form-data">
-            <input type="file" id="image" name="image" accept="image/png, image/jpeg">
-            <button type="submit" class="btn btn-primary" name="button" value="backgroundImg">Submit</button>
         </form>
     </div>
 </div>

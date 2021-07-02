@@ -1,11 +1,14 @@
 import sqlite3
+import imghdr
+from base64 import b64encode
 from functools import wraps
 from ast import literal_eval
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, url_for, render_template, redirect, session, json
-import os
 
 DB = "./database.db"
+DEFAULT_BACKGROUND = "/static/background.png"
+
 
 def sqlite_execute(*query):
     conn = sqlite3.connect(DB)
@@ -62,7 +65,7 @@ sqlite_execute("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOIN
 @search_logout
 def index():
     if "user" in session:
-        return render_template("index.html", message=session["user"], user=session["user"])
+        return render_template("index.html", message=session["user"])
     return render_template("index.html", message="Sign in or sign up")
 
 
@@ -99,19 +102,30 @@ def settings():
     # GET
     if request.method == "GET":
         private = sqlite_get("SELECT private FROM users WHERE username = ?", (session["user"],))[0][0]
-        return render_template("settings.html", private=private, user=session["user"])
+        return render_template("settings.html", private=private)
 
     # Update private status
-    if request.method == "POST" and request.form.get("button") == "update":
+    if request.form.get("button") == "update":
         private = bool(request.form.get("private"))
         sqlite_execute("UPDATE users SET private = ? WHERE username = ?", (private, session["user"]))
-        return render_template("settings.html", private=private, message="Update successful", user=session["user"])
+        return render_template("settings.html", private=private, message="Update successful")
 
     # Delete account
-    if request.method == "POST" and request.form.get("button") == "delete":
+    if request.form.get("button") == "delete":
         sqlite_execute("DELETE FROM users WHERE username = ?", (session["user"],))
         session.clear()
         return redirect(url_for("index"))
+
+    # Upload background image
+    if request.files and "image" in request.files:
+        image_bytes = request.files["image"].read()
+        file_type = imghdr.what(None, image_bytes)
+        if file_type not in ["png", "jpeg"]:
+            return json.dumps({"status": 1})
+        data_url = f"data:image/{file_type};base64,{b64encode(image_bytes).decode()}"
+        sqlite_execute(f"CREATE TABLE IF NOT EXISTS '{session['user']}-background' (id INTEGER PRIMARY KEY AUTOINCREMENT, image TEXT, title TEXT)")
+        sqlite_execute(f"INSERT INTO '{session['user']}-background' (image, title) VALUES (?, ?)", (data_url, request.form["title"]))
+        return json.dumps({"status": 0})
 
     # Update password
     hashed_password = sqlite_get("SELECT password FROM users WHERE username = ?", (session["user"],))[0][0]
@@ -119,6 +133,7 @@ def settings():
         return json.dumps({"status": 1})
     sqlite_execute("UPDATE users SET password = ? WHERE username = ?", (generate_password_hash(request.json["new"]), session["user"]))
     return json.dumps({"status": 0})
+
 
 @app.route("/tasks", methods=["GET", "POST"])
 @signin_required(True)
@@ -161,7 +176,7 @@ def groups():
             except IndexError:
                 continue
             invitations.append((invitors, n))
-        return render_template("groups.html", user=session["user"], groups=get_groups(), invitations=invitations)
+        return render_template("groups.html", groups=get_groups(), invitations=invitations)
 
     # Create or join group
     if request.method == "POST" and request.is_json:
@@ -202,16 +217,18 @@ def groups():
     return redirect(url_for("groups"))
 
 
-@app.route("/upload-image", methods=["GET", "POST"])
-def upload_image():
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1
-    # Update Background Image
-    if request.method == "POST":
-        print(request.files)
-        if request.files:
-            image = request.files["image"]
-            image.save(os.path.join("./static/userData/bgi", (str(session["user"]) + " backgroundImg")))
-            return render_template("settings.html", user=session["user"])
+# Performance?
+@app.context_processor
+def processor():
+    def get_background():
+        ret = DEFAULT_BACKGROUND
+        if "user" in session:
+            try:
+                ret = sqlite_get(f"SELECT image FROM '{session['user']}-background' WHERE id = 1")[0][0]
+            except (sqlite3.OperationalError, IndexError):
+                pass
+        return ret
+    return {"get_background": get_background}
 
 
 app.run(debug=True, host="0.0.0.0")
