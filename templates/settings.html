@@ -53,6 +53,16 @@ Account Settings
 </script>
 {% endblock %}
 
+{% block style %}
+<style>
+    .background-choice {
+        max-width: 30vw;
+        max-height: 30vh;
+        margin-top: 5vh;
+    }
+</style>
+{% endblock %}
+
 {% block main %}
 <div class="center">
     <div>
@@ -106,15 +116,24 @@ Account Settings
     <hr>
     <div>
         <h3>Manage background images</h3>
+        <div class="container">
+            <div class="row">
+                {% for background in get_all_backgrounds() %}
+                <div class="col">
+                    <span>{{background[1]}}</span>
+                    <img class="background-choice" src="{{background[0]}}" />
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <hr>
+        <div>
+            <h3 style="color: red;">Delete account (This action is irreversible)</h3>
+            <form method="post" id="delete-form">
+                <button name="button" value="delete" type="submit" class="btn btn-danger"
+                    onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
+                    Account</button>
+            </form>
+        </div>
     </div>
-    <hr>
-    <div>
-        <h3 style="color: red;">Delete account (This action is irreversible)</h3>
-        <form method="post" id="delete-form">
-            <button name="button" value="delete" type="submit" class="btn btn-danger"
-                onclick="return confirm('Are you sure that you want to delete your account? This action is irreversible.');">Delete
-                Account</button>
-        </form>
-    </div>
-</div>
-{% endblock %}
+    {% endblock %}

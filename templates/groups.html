@@ -43,23 +43,25 @@ Group Management
 <script>
     $("#group-form").on("submit", function () {
         $.ajax({
-            url: "groups",
+            url: "/api/group/join",
             data: JSON.stringify(getJSON($(this))),
             success: function (response) {
                 switch (response.status) {
                     case 0:
+                        alert("You have successfully joined the group")
                         window.location.reload();
                         break;
                     case 1:
-                        if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
-                            $.ajax({
-                                url: "groups",
-                                data: JSON.stringify({ ...getJSON($("#group-form")), "confirm": true }),
-                                success: function () {
-                                    window.location.reload();
-                                }
-                            });
-                        }
+                        alert("The group name \"" + $("#name").val() + "\" does not exist.")
+                        // if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
+                        //     $.ajax({
+                        //         url: "groups",
+                        //         data: JSON.stringify({ ...getJSON($("#group-form")), "confirm": true }),
+                        //         success: function () {
+                        //             window.location.reload();
+                        //         }
+                        //     });
+                        // }
                         break;
                     case 2:
                         alert("You are already a member of the group \"" + $("#name").val() + "\".");
@@ -74,6 +76,23 @@ Group Management
         });
         return false;
     });
+    $("#group-form-create").on("submit", function () {
+        $.ajax({
+            url: "/api/group/create",
+            data: JSON.stringify(getJSON($(this))),
+            success: function (response) {
+
+                if (response.success) {
+                    alert("The Group has been Created!");
+                }
+                else {
+                    alert(response.message);
+                }
+            }
+        });
+        return false;
+    });
+
 </script>
 {% endblock %}
 
@@ -137,17 +156,47 @@ Group Management
         </form>
     </tbody>
 </table>
-<h1>Join group. If the group does not exist, it will be created.</h1>
-<form id="group-form">
-    <div class="form-group">
-        <label for="name">Group name</label>
-        <input autofocus required type="text" class="form-control" name="name" id="name" placeholder="Enter group name">
+<div class="container">
+    <div class="row">
+
+        <div class="column">
+            <h1>Join Group</h1>
+            <form id="group-form">
+                <div class="form-group">
+                    <label for="name">Group name</label>
+                    <input autofocus required type="text" class="form-control" name="name" id="name"
+                        placeholder="Enter group name">
+                </div>
+                <div class="form-group">
+                    <label for="password">Group password</label>
+                    <input required type="password" class="form-control" name="password" id="password"
+                        placeholder="Enter group password">
+                </div>
+                <button type="submit" id="submit-btn" class="btn btn-primary">Join group</button>
+            </form>
+        </div>
+        <div class="column" style="flex:1">
+
+        </div>
+
+        <div class="column">
+            <h1>Create Group</h1>
+            <form id="group-form-create">
+                <div class="form-group">
+                    <label for="name">Group Name</label>
+                    <input autofocus required type="text" class="form-control" name="name" id="name-create"
+                        placeholder="Enter group name">
+                </div>
+                <div class="form-group">
+                    <label for="password">Group password</label>
+                    <input required type="password" class="form-control" name="password" id="password-create"
+                        placeholder="Enter group password">
+                </div>
+                <button type="submit" id="submit-btn" class="btn btn-primary">Create Group</button>
+            </form>
+        </div>
+
     </div>
-    <div class="form-group">
-        <label for="password">Group password</label>
-        <input required type="password" class="form-control" name="password" id="password"
-            placeholder="Enter group password">
-    </div>
-    <button type="submit" id="submit-btn" class="btn btn-primary">Join or create group</button>
-</form>
+</div>
+
 {% endblock %}
