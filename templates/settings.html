@@ -35,7 +35,7 @@ Account Settings
     });
     $("#background-form").on("submit", function () {
         $.ajax({
-            url: "settings",
+            url: "/api/background/upload",
             data: new FormData(this),
             cache: false,
             contentType: false,
@@ -121,6 +121,9 @@ Account Settings
                 {% for background in get_all_backgrounds() %}
                 <div class="col">
                     <span>{{background[1]}}</span>
+                    {% if background[2] %}
+                    <span>(active)</span>
+                    {% endif %}
                     <img class="background-choice" src="{{background[0]}}" />
                 </div>
                 {% endfor %}

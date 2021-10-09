@@ -46,31 +46,11 @@ Group Management
             url: "/api/group/join",
             data: JSON.stringify(getJSON($(this))),
             success: function (response) {
-                switch (response.status) {
-                    case 0:
-                        alert("You have successfully joined the group")
-                        window.location.reload();
-                        break;
-                    case 1:
-                        alert("The group name \"" + $("#name").val() + "\" does not exist.")
-                        // if (confirm("The group name \"" + $("#name").val() + "\" does not exist. Are you sure that you want to create a new group?")) {
-                        //     $.ajax({
-                        //         url: "groups",
-                        //         data: JSON.stringify({ ...getJSON($("#group-form")), "confirm": true }),
-                        //         success: function () {
-                        //             window.location.reload();
-                        //         }
-                        //     });
-                        // }
-                        break;
-                    case 2:
-                        alert("You are already a member of the group \"" + $("#name").val() + "\".");
-                        $("#name").select();
-                        break;
-                    case 3:
-                        alert("Incorrect password.");
-                        $("#password").val("").focus();
-                        break;
+                if (response.success) {
+                    alert("You have successfully joined the group.");
+                    window.location.reload();
+                } else {
+                    alert(response.message);
                 }
             }
         });
@@ -81,9 +61,9 @@ Group Management
             url: "/api/group/create",
             data: JSON.stringify(getJSON($(this))),
             success: function (response) {
-
                 if (response.success) {
-                    alert("The Group has been Created!");
+                    alert("You have successfully created the group.");
+                    window.location.reload();
                 }
                 else {
                     alert(response.message);
@@ -92,7 +72,6 @@ Group Management
         });
         return false;
     });
-
 </script>
 {% endblock %}
 

@@ -1,15 +1,24 @@
-from io import BytesIO
+import os
 import sqlite3
-import imghdr
-from PIL import Image
+from ast import literal_eval
 from base64 import b64encode
 from functools import wraps
-from ast import literal_eval
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, url_for, render_template, redirect, session, json
+from io import BytesIO
+
+from flask import (Flask, json, redirect, render_template, request, session,
+                   url_for)
+from PIL import Image
+from werkzeug.security import check_password_hash, generate_password_hash
 
 DB = "./database.db"
+IMAGES_DIR = "./static/images"
 DEFAULT_BACKGROUND = "/static/background.png"
+
+
+class Method:
+    GET = ["GET"]
+    POST = ["POST"]
+    BOTH = ["GET", "POST"]
 
 
 def sqlite_execute(*query):
@@ -24,12 +33,12 @@ def sqlite_get(*query):
     return cursor.execute(*query).fetchall()
 
 
-def signin_required(signed_in):
+def require_signin(signin_required):
     def dec(f):
         @wraps(f)
         def wrapper():
-            if signed_in is not ("user" in session):
-                return redirect(url_for("index"))
+            if signin_required is not ("user" in session):
+                return redirect(url_for("index")), 403
             return f()
         return wrapper
     return dec
@@ -48,25 +57,41 @@ def search_logout(f):
     return wrapper
 
 
+def api(method):
+    def dec(f):
+        @wraps(f)
+        def wrapper():
+            if (not request.is_json) or (request.method not in method):
+                return json.dumps({"success": False, "message": "Bad request."}), 400
+            if "user" not in session:
+                return json.dumps({"success": False, "message": "You must be signed in to perform this operation."}), 403
+            return f()
+        return wrapper
+    return dec
+
+
 def get_groups():
     groups = sqlite_get(
         "SELECT name, members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
     return [(group[0], [i if i != session["user"] else i + " (yourself)" for i in literal_eval(group[1])]) for group in groups]
 
 
+def init():
+    with open(DB, "a"):
+        pass
+    # FIXME: Restrict access to this path.
+    os.makedirs(IMAGES_DIR, exist_ok=True)
+    sqlite_execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
+    sqlite_execute("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
+    # Should we use usernames to refer to a user, or id's?
+    sqlite_execute("CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
+
+
 app = Flask(__name__)
 app.secret_key = b"\xa3\x08\x94\xa2ED\x10\xa4@:6\xb6=i\xe8\xec"
 
-with open(DB, "a"):
-    pass
 
-sqlite_execute(
-    "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
-sqlite_execute(
-    "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
-
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=Method.BOTH)
 @search_logout
 def index():
     if "user" in session:
@@ -74,8 +99,8 @@ def index():
     return render_template("index.html", message="Sign in or sign up")
 
 
-@app.route("/signup", methods=["GET", "POST"])
-@signin_required(False)
+@app.route("/signup", methods=Method.BOTH)
+@require_signin(False)
 def signup():
     if request.method == "GET":
         return render_template("signup.html")
@@ -85,26 +110,26 @@ def signup():
         sqlite_execute("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)",
                        (request.json["username"], generate_password_hash(request.json["password"])))
         return json.dumps({"status": 0})
-    return json.dumps({"status": 1})
+    return json.dumps({"success": False})
 
 
-@app.route("/signin", methods=["GET", "POST"])
-@signin_required(False)
+@app.route("/signin", methods=Method.BOTH)
+@require_signin(False)
 def signin():
     if request.method == "GET":
         return render_template("signin.html")
     result = sqlite_get(
         "SELECT username, password FROM users WHERE username = ?", (request.json["username"],))
     if not result:
-        return json.dumps({"status": 1})
+        return json.dumps({"success": False, "message": "Username does not exist."})
     if not check_password_hash(result[0][1], request.json["password"]):
-        return json.dumps({"status": 2})
+        return json.dumps({"success": False, "message": "Incorrect password."})
     session["user"] = result[0][0]
-    return json.dumps({"status": 0})
+    return json.dumps({"success": True})
 
 
-@app.route("/settings", methods=["GET", "POST"])
-@signin_required(True)
+@app.route("/settings", methods=Method.BOTH)
+@require_signin(True)
 @search_logout
 def settings():
     # GET
@@ -130,8 +155,6 @@ def settings():
     # Upload background image
     if request.files and "image" in request.files:
         image_bytes = request.files["image"].read()
-        if imghdr.what(None, image_bytes) not in ["png", "jpeg"]:
-            return json.dumps({"status": 1})
         pil_image = Image.open(BytesIO(image_bytes))
         WIDTH = 1280
         original_size = pil_image.size
@@ -171,38 +194,21 @@ def settings():
     hashed_password = sqlite_get(
         "SELECT password FROM users WHERE username = ?", (session["user"],))[0][0]
     if not check_password_hash(hashed_password, request.json["old"]):
-        return json.dumps({"status": 1})
+        return json.dumps({"success": False})
     sqlite_execute("UPDATE users SET password = ? WHERE username = ?",
                    (generate_password_hash(request.json["new"]), session["user"]))
     return json.dumps({"status": 0})
 
 
-@ app.route("/tasks", methods=["GET", "POST"])
-@ signin_required(True)
-@ search_logout
+@app.route("/tasks", methods=Method.BOTH)
+@require_signin(True)
+@search_logout
 def tasks():
     return render_template("tasks.html")
 
 
-@ app.route("/api/group/create", methods=["GET", "POST"])
-@ signin_required(True)
-def group_create():
-    if request.method == "POST" and request.is_json:
-        try:
-            result = sqlite_get(
-                "SELECT name FROM groups WHERE name = ?", (request.json["name"],))
-            if result:
-                return json.dumps({"success": False, "message": f"{request.json['name']} Already Exists"})
-
-            sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (
-                request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
-            return json.dumps({"success": True})
-        except sqlite3.OperationalError:
-            return json.dumps({"success": False, "message": "DB Failed :("})
-
-
-@app.route("/search", methods=["GET", "POST"])
-@signin_required(True)
+@app.route("/search", methods=Method.BOTH)
+@require_signin(True)
 @search_logout
 def search():
     # GET
@@ -225,8 +231,8 @@ def search():
     return json.dumps({"status": 0})
 
 
-@app.route("/groups", methods=["Get", "POST"])
-@signin_required(True)
+@app.route("/groups", methods=Method.BOTH)
+@require_signin(True)
 @search_logout
 def groups():
     # GET
@@ -269,53 +275,72 @@ def groups():
     return redirect(url_for("groups"))
 
 
-@app.route("/api/group/join", methods=["GET", "POST"])
-@signin_required(True)
-@search_logout
-def joingroup():
-    # Create or join group
-    if request.method == "POST" and request.is_json:
+@app.route("/api/group/join", methods=Method.POST)
+@api(Method.POST)
+def group_join():
+    result = sqlite_get("SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
+    if not result:
+        return json.dumps({"success": False, "message": f"\"{request.json['name']}\" does not exist. To create a new group, click \"Create Group\"."})
+    members = literal_eval(result[0][1])
+    if session["user"] in members:
+        return json.dumps({"success": False, "message": f"You are already a member of \"{request.json['name']}\"."})
+    if not check_password_hash(result[0][0], request.json["password"]):
+        return json.dumps({"success": False, "message": "Incorrect password."})
+    members.append(session["user"])
+    sqlite_execute("UPDATE groups SET members = ? WHERE name = ?",
+                   (repr(members), request.json["name"]))
+    return json.dumps({"success": True})
+
+
+@app.route("/api/group/create", methods=Method.POST)
+@api(Method.POST)
+def group_create():
+    try:
         result = sqlite_get(
-            "SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
-        if not result:
-            if "confirm" not in request.json:
-                return json.dumps({"status": 1})  # Confirm create
-            # Create group
-            sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (
-                request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
-            return json.dumps({"status": 0})
-        # Join group
-        members = literal_eval(result[0][1])
-        if session["user"] in members:
-            return json.dumps({"status": 2})  # Already a member
-        if not check_password_hash(result[0][0], request.json["password"]):
-            return json.dumps({"status": 3})  # Incorrect password
-        members.append(session["user"])
-        sqlite_execute("UPDATE groups SET members = ? WHERE name = ?",
-                       (repr(members), request.json["name"]))
-        return json.dumps({"status": 0})
+            "SELECT name FROM groups WHERE name = ?", (request.json["name"],))
+        if result:
+            return json.dumps({"success": False, "message": f"\"{request.json['name']}\" already exists. To join an existing group, click \"Join Group\"."})
+        sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (
+            request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
+        return json.dumps({"success": True})
+    except sqlite3.OperationalError:
+        return json.dumps({"success": False, "message": "Database operation failed. Please try again."})
+
+
+@app.route("/api/background/upload", methods=Method.POST)
+def background_upload():
+    if "user" not in session:
+        return json.dumps({"success": False, "message": "You must be signed in to perform this operation."}), 403
+    if (not request.method == "POST") or (not request.files) or ("image" not in request.files) or (not request.form) or ("title" not in request.form):
+        return json.dumps({"success": False, "message": "Bad request."}), 400
+    sqlite_execute("UPDATE images SET active = false")
+    conn = sqlite3.connect(DB)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO images (title, owner, active) VALUES (?, ?, ?)", (request.form["title"], session["user"], True))
+    new_id = cursor.execute("SELECT last_insert_rowid()").fetchall()[0][0]
+    conn.commit()
+    request.files["image"].save(os.path.join(IMAGES_DIR, str(new_id)))
+    return json.dumps({"success": True})
 
 
 # Performance?
 @app.context_processor
 def processor():
     def get_all_backgrounds():
-        assert("user" in session)
-        try:
-            return sqlite_get(f"SELECT image, title FROM '{session['user']}-background'")
-        except sqlite3.OperationalError:
-            return []
+        assert "user" in session
+        return [(f"/static/images/{id}", title, active) for (id, title, active) in sqlite_get("SELECT id, title, active FROM images WHERE owner = ?", (session["user"],))]
 
-    def get_preferred_background():
+    def get_active_background():
         if "user" not in session:
             return DEFAULT_BACKGROUND
         try:
-            return sqlite_get(
-                f"SELECT image FROM '{session['user']}-background' WHERE id = 1")[0][0]  # FIXME: Use the real id.
-        except (sqlite3.OperationalError, IndexError):
+            return f"/static/images/{sqlite_get('SELECT id FROM images WHERE owner = ? AND active = true', (session['user'],))[0][0]}"
+        except IndexError:
             return DEFAULT_BACKGROUND
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_preferred_background": get_preferred_background}
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background}
 
 
-app.run(debug=True, host="0.0.0.0")
+if __name__ == "__main__":
+    init()
+    app.run(debug=True, host="0.0.0.0")

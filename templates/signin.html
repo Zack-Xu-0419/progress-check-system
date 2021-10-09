@@ -24,19 +24,10 @@ Sign In
             url: "signin",
             data: JSON.stringify(getJSON($(this))),
             success: function (response) {
-                switch (response.status) {
-                    case 0:
-                        window.location.replace("/");
-                        break;
-                    case 1:
-                        alert("Username does not exist.");
-                        $("#username").select();
-                        break;
-                    case 2:
-                        alert("Incorrect password.");
-                        $("#password").val("").focus();
-                        break;
-                }
+                if (response.success)
+                    window.location.replace("/");
+                else
+                    alert(response.message);
             }
         });
         return false;
