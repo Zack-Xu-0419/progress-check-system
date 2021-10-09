@@ -5,5 +5,119 @@ Main Page
 {% endblock %}
 
 {% block main %}
-<h1>Welcome</h1>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1>Welcome {{message}}</h1>
+
+            {% if 'user' in session %}
+
+            <!-- Modal Button-->
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
+                Add a New Task
+            </button>
+            {% endif %}
+        </div>
+        {% if 'user' in session %}
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            Leaders
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            2
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col">
+
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block modal %}
+
+{% if 'user' in session %}
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">New Task</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newTask">
+                    <input required type="text" id="taskName" name="taskName" placeholder="Task Name" />
+                    <label for="groups">Create task in - </label>
+                    <select required id="groups" name="groups">
+                        {% for g in get_groups() %}
+                        <option value="{{g}}">{{g}}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="deadline">Deadline - </label>
+                    <input required type="date" id="deadline" name="deadline" />
+                    <input required type="text" list="categories" id="category" name="category"
+                        placeholder="Category" />
+                    <datalist id="categories">
+                        <option value="existing List Goes here">
+                        <option value="existing List Goes here 2">
+                    </datalist>
+                    <input required type="number" name="points" placeholder="Points" />
+                    <button class="btn btn-primary" type="submit">
+                        Create Task
+                    </button>
+                </form>
+            </div>
+
+
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block script %}
+<script>
+    $("#newTask").on("submit", function () {
+        $.ajax({
+            url: "/api/task/new",
+            data: JSON.stringify(getJSON($(this))),
+            success: function (response) {
+                if (response.success) {
+                    alert("Operation successful.");
+                    window.location.reload();
+                }
+                else {
+                    alert(response.message);
+                }
+            }
+        });
+        return false;
+    });
+</script>
 {% endblock %}

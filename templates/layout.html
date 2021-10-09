@@ -5,8 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title%}{% endblock %}</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/base.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
     <style>
         body {
             background-image: url("{{get_active_background()}}");
@@ -84,11 +85,10 @@
         </nav>
     </div>
     <div class="blur-content-behind">
+        <!-- Ideally to be of class  class="blur-content-behind", but Modal pupup doesn't work when made that way-->
         {% block main %}{% endblock %}
-        <h1>
-            {{message}}
-        </h1>
     </div>
+    {% block modal %}{% endblock %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>

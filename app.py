@@ -81,10 +81,13 @@ def init():
         pass
     # FIXME: Restrict access to this path.
     os.makedirs(IMAGES_DIR, exist_ok=True)
-    sqlite_execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
-    sqlite_execute("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
+    sqlite_execute(
+        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
+    sqlite_execute(
+        "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
     # Should we use usernames to refer to a user, or id's?
-    sqlite_execute("CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
+    sqlite_execute(
+        "CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
 
 
 app = Flask(__name__)
@@ -278,7 +281,8 @@ def groups():
 @app.route("/api/group/join", methods=Method.POST)
 @api(Method.POST)
 def group_join():
-    result = sqlite_get("SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
+    result = sqlite_get(
+        "SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
     if not result:
         return json.dumps({"success": False, "message": f"\"{request.json['name']}\" does not exist. To create a new group, click \"Create Group\"."})
     members = literal_eval(result[0][1])
@@ -316,14 +320,27 @@ def background_upload():
     sqlite_execute("UPDATE images SET active = false")
     conn = sqlite3.connect(DB)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO images (title, owner, active) VALUES (?, ?, ?)", (request.form["title"], session["user"], True))
+    cursor.execute("INSERT INTO images (title, owner, active) VALUES (?, ?, ?)",
+                   (request.form["title"], session["user"], True))
     new_id = cursor.execute("SELECT last_insert_rowid()").fetchall()[0][0]
     conn.commit()
     request.files["image"].save(os.path.join(IMAGES_DIR, str(new_id)))
     return json.dumps({"success": True})
 
 
-# Performance?
+@app.route("/api/task/new", methods=Method.POST)
+@api(Method.POST)
+def new_task():
+    name = request.json['taskName']
+    group = request.json['groups']
+    deadline = request.json['deadline']
+    category = request.json['category']
+    points = request.json['points']
+    print(name + group + deadline + category + points)
+    # Performance?
+    return json.dumps({"success": True})
+
+
 @app.context_processor
 def processor():
     def get_all_backgrounds():
@@ -338,7 +355,16 @@ def processor():
         except IndexError:
             return DEFAULT_BACKGROUND
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background}
+    def get_groups():
+        if "user" not in session:
+            return []
+        try:
+            return [item[0] for item in sqlite_get(
+                "SELECT name FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))]
+        except sqlite3.OperationalError:
+            return []
+
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, }
 
 
 if __name__ == "__main__":
