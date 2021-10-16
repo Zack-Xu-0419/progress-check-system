@@ -2,6 +2,7 @@ import os
 import sqlite3
 from ast import literal_eval
 from base64 import b64encode
+from datetime import date
 from functools import wraps
 from io import BytesIO
 
@@ -337,15 +338,19 @@ def new_task():
     groups = request.json['groups']
     deadline = request.json['deadline']
     category = request.json['category']
-    try:
-        points = int(request.json['points'])
-    except ValueError:
-        return json.dumps({"success": False, "message": "'Points' must be an integer."})
     result = sqlite_get(
         "SELECT name FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
     if (result):
         return json.dumps({"success": False, "message": f"You already have a task called \"{name}\"."})
-    sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, false)",
+    try:
+        points = int(request.json['points'])
+    except ValueError:
+        return json.dumps({"success": False, "message": "'Points' must be an integer."})
+    try:
+        date.fromisoformat(deadline)
+    except ValueError as err:
+        return json.dumps({"success": False, "message": "Deadline has invalid format: {}.".format(str(err))})
+    sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, true)",
                    (name, session["user"], groups, deadline, category, points))
     return json.dumps({"success": True})
 
@@ -374,11 +379,14 @@ def processor():
             return []
 
     def get_tasks():
+        def get_delta_days(deadline):
+            delta_date = date.fromisoformat(deadline) - date.today()
+            return delta_date.days
         assert "user" in session
         tasks = sqlite_get(
-            "SELECT name, groups, deadline, completed FROM tasks WHERE owner = ?", (session["user"],))
+            "SELECT name, groups, deadline, completed, points FROM tasks WHERE owner = ?", (session["user"],))
         result = [{"name": task[0], "groups": task[1],
-                   "deadline": task[2], "completed": task[3]} for task in tasks]
+                   "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
 
     return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks}

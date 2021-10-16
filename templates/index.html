@@ -16,8 +16,11 @@ Main Page
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
+            <input type="checkbox" id="hideCompleted">
+                Hide Completed
+            </input>
 
-            <table>
+            <table class="table table-striped">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -27,8 +30,24 @@ Main Page
                     </tr>
                 </thead>
                 <tbody>
-                    {% for task in get_tasks()%}
-                    <tr>
+
+                    <!-- TODO: Add color in class of link to signal pass deadline, completed or to be completed -->
+                    <!-- Refer to https://getbootstrap.com/docs/5.1/components/list-group/ -->
+
+                    {% for task in get_tasks() %}
+                    {% if task['completed'] == 1 %}
+                    <div class="list-group completedTask">
+                        <a href="#" class="list-group-item list-group-item-action completed" aria-current="true">
+                          <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{task['name']}}</h5>
+                            <small>{{task['delta_days']}}</small>
+                          </div>
+                          <p class="mb-1">Group: {{task['groups']}}</p>
+                          <small class="text-muted">{{task['points']}}</small>
+                        </a>
+                    </div>
+
+                    <tr class="completedTask">
                         <td>
                             {{task['name']}}
                         </td>
@@ -42,6 +61,27 @@ Main Page
                             {{task['completed']}}
                         </td>
                     </tr>
+
+                    {% endif %}
+
+                    {% if task['completed'] == 0 %}
+                    <tr class="incompleteTask">
+                        <td>
+                            {{task['name']}}
+                        </td>
+                        <td>
+                            {{task['groups']}}
+                        </td>
+                        <td>
+                            {{task['deadline']}}
+                        </td>
+                        <td>
+                            {{task['completed']}}
+                        </td>
+                    </tr>
+
+                    {% endif %}
+
                     {% endfor %}
                 </tbody>
             </table>
@@ -81,6 +121,8 @@ Main Page
 
 {% endblock %}
 
+
+
 {% block modal %}
 
 {% if 'user' in session %}
@@ -106,7 +148,7 @@ Main Page
                         {% endfor %}
                     </select>
                     <label for="deadline">Deadline - </label>
-                    <input required type="date" id="deadline" name="deadline" />
+                    <input required type="text" id="deadline" name="deadline" />
                     <input required type="text" list="categories" id="category" name="category"
                         placeholder="Category" />
                     <datalist id="categories">
@@ -149,5 +191,21 @@ Main Page
         });
         return false;
     });
+    $('#hideCompleted').on("change", function(){
+        if($(this.checked)[0] == true){
+            $(".completedTask").hide();
+        }
+        else{
+            $(".completedTask").show();
+        }
+    })
 </script>
+{% endblock %}
+
+{% block style %}
+<style>
+    .completed{
+        background-color:aquamarine;
+    }
+</style>
 {% endblock %}
