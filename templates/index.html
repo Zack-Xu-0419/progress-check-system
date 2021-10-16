@@ -16,6 +16,35 @@ Main Page
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Groups</th>
+                        <th>Deadline</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in get_tasks()%}
+                    <tr>
+                        <td>
+                            {{task['name']}}
+                        </td>
+                        <td>
+                            {{task['groups']}}
+                        </td>
+                        <td>
+                            {{task['deadline']}}
+                        </td>
+                        <td>
+                            {{task['completed']}}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% endif %}
         </div>
         {% if 'user' in session %}
@@ -68,9 +97,10 @@ Main Page
             </div>
             <div class="modal-body">
                 <form id="newTask">
-                    <input required type="text" id="taskName" name="taskName" placeholder="Task Name" />
+                    <input required type="text" id="taskName" name="name" placeholder="Task Name" />
                     <label for="groups">Create task in - </label>
                     <select required id="groups" name="groups">
+                        <option value="Private">Private/Personal</option>
                         {% for g in get_groups() %}
                         <option value="{{g}}">{{g}}</option>
                         {% endfor %}

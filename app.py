@@ -88,6 +88,8 @@ def init():
     # Should we use usernames to refer to a user, or id's?
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
+    sqlite_execute(
+        "CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, owner TEXT, groups TEXT, deadline TEXT, category TEXT, points INT, completed BOOL)")
 
 
 app = Flask(__name__)
@@ -331,13 +333,20 @@ def background_upload():
 @app.route("/api/task/new", methods=Method.POST)
 @api(Method.POST)
 def new_task():
-    name = request.json['taskName']
-    group = request.json['groups']
+    name = request.json['name']
+    groups = request.json['groups']
     deadline = request.json['deadline']
     category = request.json['category']
-    points = request.json['points']
-    print(name + group + deadline + category + points)
-    # Performance?
+    try:
+        points = int(request.json['points'])
+    except ValueError:
+        return json.dumps({"success": False, "message": "'Points' must be an integer."})
+    result = sqlite_get(
+        "SELECT name FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
+    if (result):
+        return json.dumps({"success": False, "message": f"You already have a task called \"{name}\"."})
+    sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, false)",
+                   (name, session["user"], groups, deadline, category, points))
     return json.dumps({"success": True})
 
 
@@ -364,7 +373,15 @@ def processor():
         except sqlite3.OperationalError:
             return []
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, }
+    def get_tasks():
+        assert "user" in session
+        tasks = sqlite_get(
+            "SELECT name, groups, deadline, completed FROM tasks WHERE owner = ?", (session["user"],))
+        result = [{"name": task[0], "groups": task[1],
+                   "deadline": task[2], "completed": task[3]} for task in tasks]
+        return result
+
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks}
 
 
 if __name__ == "__main__":
