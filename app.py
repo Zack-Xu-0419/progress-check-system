@@ -383,7 +383,8 @@ def complete_task():
     assert points >= 0
     sqlite_execute("UPDATE tasks SET completed = ? WHERE name = ? AND owner = ?",
                    (checked, name, session["user"]))
-    sqlite_execute("UPDATE users SET points = points + ?", (points if checked else -points,))
+    sqlite_execute("UPDATE users SET points = points + ? WHERE username = ?",
+                   (points if checked else -points, session["user"]))
     return SUCCESS
 
 
@@ -421,7 +422,21 @@ def processor():
                    "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks}
+    def get_leaders():
+        assert "user" in session
+        result = sqlite_get(
+            "SELECT members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
+        members = set()
+        for item in result:
+            members.update(literal_eval(item[0]))
+        leaders = []
+        for user in members:
+            result = sqlite_get(
+                "SELECT points FROM users WHERE username = ?", (user,))[0][0]
+            leaders.append({"name": user, "points": result})
+        return sorted(leaders, key=lambda x: x["points"], reverse=True)
+
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders}
 
 
 if __name__ == "__main__":

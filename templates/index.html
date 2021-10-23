@@ -73,21 +73,21 @@ Main Page
             <table class="table">
                 <thead>
                     <tr>
-                        <th scope="col">Leaders</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Score</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for person in get_leaders() %}
                     <tr>
-                        <td>1</td>
+                        <td>{{person["name"]}}</td>
+                        <td>{{person["points"]}}</td>
                     </tr>
-                    <tr>
-                        <td>2</td>
-                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
         <div class="col"></div>
-
         {% endif %}
     </div>
 </div>
