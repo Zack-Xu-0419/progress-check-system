@@ -14,6 +14,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 DB = "./database.db"
 IMAGES_DIR = "./static/images"
 DEFAULT_BACKGROUND = "/static/background.png"
+SUCCESS = json.dumps({"success": True})
 
 
 class Method:
@@ -63,9 +64,9 @@ def api(method):
         @wraps(f)
         def wrapper():
             if (not request.is_json) or (request.method not in method):
-                return json.dumps({"success": False, "message": "Bad request."}), 400
+                return error("Bad request."), 400
             if "user" not in session:
-                return json.dumps({"success": False, "message": "You must be signed in to perform this operation."}), 403
+                return error("You must be signed in to perform this operation."), 403
             return f()
         return wrapper
     return dec
@@ -75,6 +76,17 @@ def get_groups():
     groups = sqlite_get(
         "SELECT name, members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
     return [(group[0], [i if i != session["user"] else i + " (yourself)" for i in literal_eval(group[1])]) for group in groups]
+
+
+def get_points():
+    if "user" not in session:
+        return 0
+    return sqlite_get(
+        "SELECT points FROM users WHERE username = ?", (session["user"],))[0][0]
+
+
+def error(message):
+    return json.dumps({"success": False, "message": message})
 
 
 def init():
@@ -101,8 +113,8 @@ app.secret_key = b"\xa3\x08\x94\xa2ED\x10\xa4@:6\xb6=i\xe8\xec"
 @search_logout
 def index():
     if "user" in session:
-        return render_template("index.html", message=session["user"])
-    return render_template("index.html", message="Sign in or sign up")
+        return render_template("index.html", message=f"{session['user']} (you have {get_points()} points)")
+    return render_template("index.html", message="sign in or sign up")
 
 
 @app.route("/signup", methods=Method.BOTH)
@@ -127,11 +139,11 @@ def signin():
     result = sqlite_get(
         "SELECT username, password FROM users WHERE username = ?", (request.json["username"],))
     if not result:
-        return json.dumps({"success": False, "message": "Username does not exist."})
+        return error("Username does not exist.")
     if not check_password_hash(result[0][1], request.json["password"]):
-        return json.dumps({"success": False, "message": "Incorrect password."})
+        return error("Incorrect password.")
     session["user"] = result[0][0]
-    return json.dumps({"success": True})
+    return SUCCESS
 
 
 @app.route("/settings", methods=Method.BOTH)
@@ -287,16 +299,16 @@ def group_join():
     result = sqlite_get(
         "SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
     if not result:
-        return json.dumps({"success": False, "message": f"\"{request.json['name']}\" does not exist. To create a new group, click \"Create Group\"."})
+        return error(f"\"{request.json['name']}\" does not exist. To create a new group, click \"Create Group\".")
     members = literal_eval(result[0][1])
     if session["user"] in members:
-        return json.dumps({"success": False, "message": f"You are already a member of \"{request.json['name']}\"."})
+        return error(f"You are already a member of \"{request.json['name']}\".")
     if not check_password_hash(result[0][0], request.json["password"]):
-        return json.dumps({"success": False, "message": "Incorrect password."})
+        return error("Incorrect password.")
     members.append(session["user"])
     sqlite_execute("UPDATE groups SET members = ? WHERE name = ?",
                    (repr(members), request.json["name"]))
-    return json.dumps({"success": True})
+    return SUCCESS
 
 
 @app.route("/api/group/create", methods=Method.POST)
@@ -306,20 +318,20 @@ def group_create():
         result = sqlite_get(
             "SELECT name FROM groups WHERE name = ?", (request.json["name"],))
         if result:
-            return json.dumps({"success": False, "message": f"\"{request.json['name']}\" already exists. To join an existing group, click \"Join Group\"."})
+            return error(f"\"{request.json['name']}\" already exists. To join an existing group, click \"Join Group\".")
         sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (
             request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
-        return json.dumps({"success": True})
+        return SUCCESS
     except sqlite3.OperationalError:
-        return json.dumps({"success": False, "message": "Database operation failed. Please try again."})
+        return error("Database operation failed. Please try again.")
 
 
 @app.route("/api/background/upload", methods=Method.POST)
 def background_upload():
     if "user" not in session:
-        return json.dumps({"success": False, "message": "You must be signed in to perform this operation."}), 403
+        return error("You must be signed in to perform this operation."), 403
     if (not request.method == "POST") or (not request.files) or ("image" not in request.files) or (not request.form) or ("title" not in request.form):
-        return json.dumps({"success": False, "message": "Bad request."}), 400
+        return error("Bad request."), 400
     sqlite_execute("UPDATE images SET active = false")
     conn = sqlite3.connect(DB)
     cursor = conn.cursor()
@@ -328,7 +340,7 @@ def background_upload():
     new_id = cursor.execute("SELECT last_insert_rowid()").fetchall()[0][0]
     conn.commit()
     request.files["image"].save(os.path.join(IMAGES_DIR, str(new_id)))
-    return json.dumps({"success": True})
+    return SUCCESS
 
 
 @app.route("/api/task/new", methods=Method.POST)
@@ -340,19 +352,39 @@ def new_task():
     category = request.json['category']
     result = sqlite_get(
         "SELECT name FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
-    if (result):
-        return json.dumps({"success": False, "message": f"You already have a task called \"{name}\"."})
+    if result:
+        return error(f"You already have a task called \"{name}\".")
     try:
         points = int(request.json['points'])
+        if points < 0:
+            raise ValueError
     except ValueError:
-        return json.dumps({"success": False, "message": "'Points' must be an integer."})
+        return error("\"Points\" must be a nonnegative integer.")
     try:
         date.fromisoformat(deadline)
     except ValueError as err:
-        return json.dumps({"success": False, "message": "Deadline has invalid format: {}.".format(str(err))})
+        return error("Deadline has invalid format: {}.".format(str(err)))
     sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, true)",
                    (name, session["user"], groups, deadline, category, points))
-    return json.dumps({"success": True})
+    return SUCCESS
+
+
+@app.route("/api/task/complete", methods=Method.POST)
+@api(Method.POST)
+def complete_task():
+    name = request.json["name"]
+    checked = request.json["checked"]
+    result = sqlite_get(
+        "SELECT points FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
+    if not result:
+        return error(f"Task \"{name}\" not found.")
+    points = result[0][0]
+    assert len(result) == 1
+    assert points >= 0
+    sqlite_execute("UPDATE tasks SET completed = ? WHERE name = ? AND owner = ?",
+                   (checked, name, session["user"]))
+    sqlite_execute("UPDATE users SET points = points + ?", (points if checked else -points,))
+    return SUCCESS
 
 
 @app.context_processor
