@@ -293,6 +293,13 @@ def groups():
     return redirect(url_for("groups"))
 
 
+@app.route("/api/userState/setShowComplete", methods=Method.POST)
+@api(Method.POST)
+def set_show_complete():
+    session['showCompleted'] = request.json['status']
+    return SUCCESS
+
+
 @app.route("/api/group/join", methods=Method.POST)
 @api(Method.POST)
 def group_join():
@@ -421,6 +428,11 @@ def processor():
         result = [{"name": task[0], "groups": task[1],
                    "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
+
+    def get_show_complete():
+        assert "user" in session
+        print(session['showCompleted'])
+        return [session['showCompleted']]
 
     def get_leaders():
         assert "user" in session

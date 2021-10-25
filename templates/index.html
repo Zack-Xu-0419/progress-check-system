@@ -16,9 +16,19 @@ Main Page
             <input type="checkbox" id="hideCompleted" />
             <label>Hide Completed</label>
             <div>
-                {% for task in get_tasks() %}
-                {% if task["completed"] %}
-                <div class="list-group completedTask">
+                <table class="table table-stripped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th style="width: 50%;"></th>
+                            <th>Days Until Due</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                </table>
+                <ul>
+                    {% for task in get_tasks() %}
+                    <!-- <div class="list-group completedTask">
                     <div href="#" class="list-group-item list-group-item-action completed" aria-current="true">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{task["name"]}}</h5>
@@ -27,9 +37,31 @@ Main Page
                         <p class="mb-1">Group: {{task["groups"]}}</p>
                         <small class="text-muted">{{task["points"]}}</small>
                     </div>
-                </div>
-                {% endif %}
-                {% endfor %}
+                </div> -->
+
+                    {% if task["completed"] %}
+                    {% if get_show_complete() == True %}
+                    <li style="margin-left: -40px; color: blue;"
+                        class="completedTask list-group-item justify-content-between align-items-center">
+                        {% endif %}
+                        {% else %}
+                    <li style=" margin-left: -40px; color: red;"
+                        class=" list-group-item justify-content-between align-items-center">
+                        {% endif %}
+                        {{task["name"]}}
+                        <div style="float:right" class="right">
+                            <small style="margin-right: 20px;">{{task["delta_days"]}}</small>
+                            <span style="margin-right: 20px;"
+                                class="badge badge-primary badge-pill">{{task["points"]}}</span>
+                            {% if task["completed"] %}
+                            <input type="checkbox" class="completeCheck" name="{{task['name']}}" checked />
+                            {% else %}
+                            <input type="checkbox" class="completeCheck" name="{{task['name']}}" />
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
             <table class="table table-striped">
                 <thead>
@@ -159,11 +191,13 @@ Main Page
         });
         return false;
     });
+
     $("#hideCompleted").on("change", function () {
         if (this.checked) {
-            $(".completedTask").hide();
+            $('.completedTask').hide();
+            hideCompleted.call(this);
         } else {
-            $(".completedTask").show();
+            $('.completedTask').show();
         }
     });
     $(".completeCheck").on("change", function () {
@@ -175,6 +209,21 @@ Main Page
         $.ajax({
             url: "/api/task/complete",
             data: JSON.stringify({ name: this.name, checked: this.checked }),
+            success: function (response) {
+                if (response.success) {
+                    alert("Operation successful.");
+                    window.location.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+        });
+    }
+
+    function hideCompleted() {
+        $.ajax({
+            url: "/api/userState/setShowComplete",
+            data: JSON.stringify({ status: this.checked }),
             success: function (response) {
                 if (response.success) {
                     alert("Operation successful.");
