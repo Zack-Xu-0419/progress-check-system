@@ -13,7 +13,11 @@ Main Page
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
+            {% if get_show_complete() == True %}
+            <input type="checkbox" id="hideCompleted" checked />
+            {% else %}
             <input type="checkbox" id="hideCompleted" />
+            {% endif %}
             <label>Hide Completed</label>
             <div>
                 <table class="table table-stripped">
@@ -40,7 +44,7 @@ Main Page
                 </div> -->
 
                     {% if task["completed"] %}
-                    {% if get_show_complete() == True %}
+                    {% if get_show_complete() != True %}
                     <li style="margin-left: -40px; color: blue;"
                         class="completedTask list-group-item justify-content-between align-items-center">
                         {% endif %}
@@ -198,6 +202,7 @@ Main Page
             hideCompleted.call(this);
         } else {
             $('.completedTask').show();
+            hideCompleted.call(this);
         }
     });
     $(".completeCheck").on("change", function () {

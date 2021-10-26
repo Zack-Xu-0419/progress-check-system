@@ -431,8 +431,7 @@ def processor():
 
     def get_show_complete():
         assert "user" in session
-        print(session['showCompleted'])
-        return [session['showCompleted']]
+        return session['showCompleted']
 
     def get_leaders():
         assert "user" in session
@@ -448,7 +447,7 @@ def processor():
             leaders.append({"name": user, "points": result})
         return sorted(leaders, key=lambda x: x["points"], reverse=True)
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders}
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders, "get_show_complete": get_show_complete}
 
 
 if __name__ == "__main__":
