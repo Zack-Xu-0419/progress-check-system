@@ -293,10 +293,10 @@ def groups():
     return redirect(url_for("groups"))
 
 
-@app.route("/api/userState/setShowComplete", methods=Method.POST)
+@app.route("/api/userState/setHideComplete", methods=Method.POST)
 @api(Method.POST)
-def set_show_complete():
-    session['showCompleted'] = request.json['status']
+def set_hide_complete():
+    session['hideCompleted'] = request.json['status']
     return SUCCESS
 
 
@@ -429,9 +429,14 @@ def processor():
                    "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
 
-    def get_show_complete():
+    def get_hide_complete():
         assert "user" in session
-        return session['showCompleted']
+        result = False
+        try:
+            result = session['hideCompleted']
+        except(KeyError):
+            session['hideCompleted'] = False
+        return result
 
     def get_leaders():
         assert "user" in session
@@ -447,7 +452,7 @@ def processor():
             leaders.append({"name": user, "points": result})
         return sorted(leaders, key=lambda x: x["points"], reverse=True)
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders, "get_show_complete": get_show_complete}
+    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders, "get_hide_complete": get_hide_complete}
 
 
 if __name__ == "__main__":

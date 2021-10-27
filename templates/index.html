@@ -7,13 +7,13 @@ Main Page
 {% block main %}
 <div class="container">
     <div class="row">
-        <div class="col">
+        <div class="col">`
             <h1>Welcome {{message}}</h1>
             {% if "user" in session %}
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
-            {% if get_show_complete() == True %}
+            {% if get_hide_complete() == True %}
             <input type="checkbox" id="hideCompleted" checked />
             {% else %}
             <input type="checkbox" id="hideCompleted" />
@@ -23,10 +23,11 @@ Main Page
                 <table class="table table-stripped">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th style="width: 50%;"></th>
-                            <th>Days Until Due</th>
-                            <th>Points</th>
+                            <th>Task</th>
+                            <th style="width: 40%;"></th>
+                            <th style="font-size: smaller;">Days Until Due</th>
+                            <th style="font-size: smaller;">Points</th>
+                            <th style="font-size: smaller">✓</th>
                         </tr>
                     </thead>
                 </table>
@@ -44,13 +45,17 @@ Main Page
                 </div> -->
 
                     {% if task["completed"] %}
-                    {% if get_show_complete() != True %}
+                    {% if get_hide_complete() == True %}
+                    <!-- if doesn't show complete -->
+                    <li style="margin-left: -40px; color: blue; display: none;"
+                        class="completedTask list-group-item justify-content-between align-items-center">
+                        {% else %}
                     <li style="margin-left: -40px; color: blue;"
                         class="completedTask list-group-item justify-content-between align-items-center">
                         {% endif %}
                         {% else %}
                     <li style=" margin-left: -40px; color: red;"
-                        class=" list-group-item justify-content-between align-items-center">
+                        class="list-group-item justify-content-between align-items-center">
                         {% endif %}
                         {{task["name"]}}
                         <div style="float:right" class="right">
@@ -67,41 +72,6 @@ Main Page
                     {% endfor %}
                 </ul>
             </div>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Groups</th>
-                        <th>Deadline</th>
-                        <th>Completed</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                    <!-- TODO: Add color in class of link to signal pass deadline, completed or to be completed -->
-                    <!-- Refer to https://getbootstrap.com/docs/5.1/components/list-group/ -->
-
-                    {% for task in get_tasks() %}
-                    {% if task["completed"] %}
-                    <tr class="completedTask">
-                        {% else %}
-                    <tr id="{{task['name']}}" class="incompleteTask">
-                        {% endif %}
-                        <td>{{task["name"]}}</td>
-                        <td>{{task["groups"]}}</td>
-                        <td>{{task["deadline"]}}</td>
-
-                        <td>
-                            {% if task["completed"] %}
-                            <input type="checkbox" class="completeCheck" name="{{task['name']}}" checked />
-                            {% else %}
-                            <input type="checkbox" class="completeCheck" name="{{task['name']}}" />
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
             {% endif %}
         </div>
         {% if "user" in session %}
@@ -227,12 +197,10 @@ Main Page
 
     function hideCompleted() {
         $.ajax({
-            url: "/api/userState/setShowComplete",
+            url: "/api/userState/setHideComplete",
             data: JSON.stringify({ status: this.checked }),
             success: function (response) {
                 if (response.success) {
-                    alert("Operation successful.");
-                    window.location.reload();
                 } else {
                     alert(response.message);
                 }
