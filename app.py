@@ -97,7 +97,7 @@ def init():
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
     sqlite_execute(
-        "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, pending TEXT)")
+        "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, member_points TEXT, pending TEXT)")
     # Should we use usernames to refer to a user, or id's?
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
@@ -326,8 +326,8 @@ def group_create():
             "SELECT name FROM groups WHERE name = ?", (request.json["name"],))
         if result:
             return error(f"\"{request.json['name']}\" already exists. To join an existing group, click \"Join Group\".")
-        sqlite_execute("INSERT INTO groups (name, password, members) VALUES (?, ?, ?)", (
-            request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]])))
+        sqlite_execute("INSERT INTO groups (name, password, members, member_points) VALUES (?, ?, ?, ?)", (
+            request.json["name"], generate_password_hash(request.json["password"]), repr([session["user"]]), repr([0])))
         return SUCCESS
     except sqlite3.OperationalError:
         return error("Database operation failed. Please try again.")
@@ -382,16 +382,32 @@ def complete_task():
     name = request.json["name"]
     checked = request.json["checked"]
     result = sqlite_get(
-        "SELECT points FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
+        "SELECT points, groups FROM tasks WHERE name = ? AND owner = ?", (name, session["user"]))
     if not result:
         return error(f"Task \"{name}\" not found.")
     points = result[0][0]
+    group = result[0][1]
     assert len(result) == 1
     assert points >= 0
     sqlite_execute("UPDATE tasks SET completed = ? WHERE name = ? AND owner = ?",
                    (checked, name, session["user"]))
     sqlite_execute("UPDATE users SET points = points + ? WHERE username = ?",
                    (points if checked else -points, session["user"]))
+    if group == "Private":
+        return SUCCESS
+    result = sqlite_get(
+        "SELECT members, member_points FROM groups WHERE members LIKE ? AND name = ?", ("%'" + session["user"] + "'%", group))
+    if not result:
+        return error("Malformed request.")
+    for group in result:
+        members = literal_eval(group[0])
+        member_points = literal_eval(group[1])
+        assert len(members) == len(member_points)
+        member_points[members.index(session["user"])
+                      ] += points if checked else -points
+        sqlite_execute("UPDATE groups SET member_points = ? WHERE members = ?", (repr(
+            member_points), group[0]))
+
     return SUCCESS
 
 
@@ -452,7 +468,26 @@ def processor():
             leaders.append({"name": user, "points": result})
         return sorted(leaders, key=lambda x: x["points"], reverse=True)
 
-    return {"get_all_backgrounds": get_all_backgrounds, "get_active_background": get_active_background, "get_groups": get_groups, "get_tasks": get_tasks, "get_leaders": get_leaders, "get_hide_complete": get_hide_complete}
+    def get_leaders_by_group():
+        assert "user" in session
+        result = sqlite_get(
+            "SELECT name, members, member_points FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
+        data = {}
+        for group in result:
+            members = literal_eval(group[1])
+            member_points = literal_eval(group[2])
+            assert len(members) == len(member_points)
+            entries = []
+            for i in range(len(members)):
+                entries.append({
+                    "name": members[i],
+                    "points": member_points[i]
+                })
+            data[group[0]] = sorted(
+                entries, key=lambda x: x["points"], reverse=True)
+        return data
+
+    return locals()
 
 
 if __name__ == "__main__":
