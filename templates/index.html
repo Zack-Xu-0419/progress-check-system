@@ -7,9 +7,50 @@ Main Page
 {% block main %}
 <div class="container">
     <div class="row">
-        <div class="col">`
+        <div class="col">
             <h4>Welcome, {{message}}</h4>
             {% if "user" in session %}
+            <div>
+                {% if get_challenged_tasks() != None %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                Task
+                            </th>
+                            <th>
+                                Challenged By
+                            </th>
+                            <th>
+                                Propose New Points
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {%for challenge in get_challenged_tasks()%}
+                        <tr>
+                            <td>
+                                {{challenge.split('-')[0]}}
+                            </td>
+                            <td>
+                                {{challenge.split('-')[1]}}
+                            </td>
+                            <td>
+                                <form id="changePoint">
+                                    <input type="number" name="{{challenge.split('-')[0]}}"
+                                        placeholder="New Points Value">
+                                    <input style="visibility:collapse; display: none;"
+                                        name="{{challenge.split('-')[1]}}">
+                                    <button type="submit"> Change
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
@@ -54,7 +95,7 @@ Main Page
                         class="completedTask list-group-item justify-content-between align-items-center">
                         {% endif %}
                         {% else %}
-                    <li style=" margin-left: -40px; color: red;"
+                    <li style="font-size: 15px; margin-left: -40px; color: red;"
                         class="list-group-item justify-content-between align-items-center">
                         {% endif %}
                         {{task["name"]}}
@@ -75,8 +116,46 @@ Main Page
                 </ul>
             </div>
             {% endif %}
+            {% if "user" in session %}
+            <h3>Other's Tasks</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>
+                            User
+                        </th>
+                        <th>
+                            Task
+                        </th>
+                        <th>
+                            Points
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, tasks in get_friends_tasks().items() %}
+                    {% for task in tasks %}
+                    <tr>
+                        <td>
+                            {{name}}
+                        </td>
+                        <td>
+                            {{task['task']}}
+                        </td>
+                        <td>
+                            {{task['points']}}
+                        </td>
+                        <td>
+                            <button name="{{task['task']}},{{name}}" class="challengeButton">
+                                Challenge
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% if "user" in session %}
         <div class="col">
             <h3>Friends Leaderboard</h3>
             <table class="table">
@@ -210,6 +289,39 @@ Main Page
         return false;
     });
 
+    $("#changePoint").on("submit", function () {
+        console.log(JSON.stringify(getJSON($(this))))
+        $.ajax({
+            url: "/api/task/changePoint",
+            data: JSON.stringify(getJSON($(this))),
+            success: function (response) {
+                if (response.success) {
+                    alert("Operation successful.");
+                    window.location.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+        });
+        return false;
+    })
+
+    $('.challengeButton').on("click", function () {
+        data = this.name.split(',');
+        console.log("data")
+        $.ajax({
+            url: "/api/task/challenge",
+            data: JSON.stringify({ taskName: data[0], userName: data[1] }),
+            success: function (response) {
+                if (response.success) {
+                    alert("Status Changed");
+                } else {
+                    alert(response.message);
+                }
+            },
+        });
+    })
+
     $("#hideCompleted").on("change", function () {
         if (this.checked) {
             $('.completedTask').hide();
@@ -220,7 +332,7 @@ Main Page
         }
     });
     $(".completeCheck").on("change", function () {
-        $("#ding").trigger("play");
+        // $("#ding").trigger("play");
         $(".points").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
         if (this.checked) {
             $("#pointAnimation").html(" +  " + this.id)

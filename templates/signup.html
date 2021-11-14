@@ -40,11 +40,11 @@ Sign Up
                 url: "signup",
                 data: JSON.stringify(getJSON($(this))),
                 success: function (response) {
-                    if (!response.status) {
+                    if (response.success) {
                         alert("Sign up successful. Please sign in.")
                         window.location.replace("signin");
                     } else {
-                        alert("Username is already taken.");
+                        alert(response.message);
                         $("#username").select();
                     }
                 }

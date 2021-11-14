@@ -13,7 +13,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 DB = "./database.db"
 IMAGES_DIR = "./static/images"
-DEFAULT_BACKGROUND = "/static/background.png"
+DEFAULT_BACKGROUND = "/static/background.jpg"
 SUCCESS = json.dumps({"success": True})
 
 
@@ -95,7 +95,7 @@ def init():
     # FIXME: Restrict access to this path.
     os.makedirs(IMAGES_DIR, exist_ok=True)
     sqlite_execute(
-        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL)")
+        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL, challenged TEXT)")
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, member_points TEXT, pending TEXT)")
     # Should we use usernames to refer to a user, or id's?
@@ -127,8 +127,8 @@ def signup():
     if not result:
         sqlite_execute("INSERT INTO users (username, password, points, private) VALUES (?, ?, 0, 0)",
                        (request.json["username"], generate_password_hash(request.json["password"])))
-        return json.dumps({"status": 0})
-    return json.dumps({"success": False})
+        return SUCCESS
+    return error(f"User \"{request.json['username']}\" already exists.")
 
 
 @app.route("/signin", methods=Method.BOTH)
@@ -304,17 +304,22 @@ def set_hide_complete():
 @api(Method.POST)
 def group_join():
     result = sqlite_get(
-        "SELECT password, members FROM groups WHERE name = ?", (request.json["name"],))
+        "SELECT password, members, member_points FROM groups WHERE name = ?", (request.json["name"],))
     if not result:
         return error(f"\"{request.json['name']}\" does not exist. To create a new group, click \"Create Group\".")
     members = literal_eval(result[0][1])
+    points = literal_eval(result[0][2])
+    assert len(members) == len(points)
     if session["user"] in members:
         return error(f"You are already a member of \"{request.json['name']}\".")
     if not check_password_hash(result[0][0], request.json["password"]):
         return error("Incorrect password.")
     members.append(session["user"])
+    points.append(0)
     sqlite_execute("UPDATE groups SET members = ? WHERE name = ?",
                    (repr(members), request.json["name"]))
+    sqlite_execute("UPDATE groups SET member_points = ? WHERE name = ?",
+                   (repr(points), request.json["name"]))
     return SUCCESS
 
 
@@ -350,6 +355,27 @@ def background_upload():
     return SUCCESS
 
 
+# FIXME: What if there is a group called private?
+def get_common_groups(person):
+    result = sqlite_get(
+        "SELECT name, members FROM groups WHERE members LIKE ?", (f'%\'{session["user"]}\'%',))
+    common_groups = []
+    for name, members in result:
+        members = literal_eval(members)
+        if person in members:
+            common_groups.append(name)
+    return common_groups
+
+
+def get_friends():
+    result = sqlite_get(
+        "SELECT members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
+    friends = set()
+    for item in result:
+        friends.update(literal_eval(item[0]))
+    return friends
+
+
 @app.route("/api/task/new", methods=Method.POST)
 @api(Method.POST)
 def new_task():
@@ -371,8 +397,101 @@ def new_task():
         date.fromisoformat(deadline)
     except ValueError as err:
         return error("Deadline has invalid format: {}.".format(str(err)))
-    sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, true)",
+    sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, false)",
                    (name, session["user"], groups, deadline, category, points))
+    return SUCCESS
+
+
+@app.route("/api/task/challenge", methods=Method.POST)
+@api(Method.POST)
+def challenge_task():
+    taskName = request.json["taskName"]
+    userName = request.json["userName"]
+    me = session["user"]
+    print(taskName)
+    print(userName)
+
+    # Retrieve existing challenges
+    # Add '|TaskName, name|' to that
+    existingChallenges = ""
+    newChallenges = ""
+
+    try:
+        existingChallenges = sqlite_get(
+            "SELECT challenged FROM users WHERE username = ?", (userName,))[0]
+    except sqlite3.OperationalError:
+        return error(sqlite3.OperationalError)
+
+    if (existingChallenges[0] != None):
+        for c in existingChallenges:
+            newChallenges += c
+        print(newChallenges)
+        existingChallenges = existingChallenges[0]
+
+        # If existing Challenges already contain this challenge, return Already Challenged
+        if(taskName + "-" + me + "|" in existingChallenges):
+            return error("The Points of this task has already been challenged!")
+        newChallenges += (taskName + "-" + me + "|")
+    else:
+        newChallenges = (taskName + "-" + me + "|")
+
+    try:
+        sqlite_execute(
+            "UPDATE users SET challenged = ? WHERE username = ?", (
+                newChallenges, userName)
+        )
+    except sqlite3.OperationalError:
+        return error("Error")
+    return SUCCESS
+
+
+def deleteFromString(text, deleteText):
+    print("Delete " + deleteText + " From " + text)
+    return text.replace(deleteText, '')
+
+
+@app.route("/api/task/changePoint", methods=Method.POST)
+@api(Method.POST)
+def change_point():
+    valueIn = request.json
+    task = ""
+    points = 0
+    challengedBy = ""
+    count = 0
+    for key in valueIn:
+        if count == 0:
+            task = key
+            points = valueIn[key]
+        if count == 1:
+            challengedBy = key
+        count += 1
+    me = session["user"]
+    original_challenged = ""
+    try:
+        sqlite_execute(
+            "UPDATE tasks SET points = ? WHERE name = ?", (points, task)
+        )
+    except sqlite3.OperationalError:
+        return error(sqlite3.OperationalError)
+
+    # Get Original Challenged
+    try:
+        original_challenged = sqlite_get(
+            "SELECT challenged FROM users WHERE username = ?", (me,)
+        )[0][0]
+    except sqlite3.OperationalError:
+        return error(sqlite3.OperationalError)
+
+    newChallenged = deleteFromString(
+        original_challenged, (task + "-" + challengedBy + "|"))
+
+    try:
+        sqlite_execute(
+            "UPDATE users SET challenged = ? WHERE username = ?", (
+                newChallenged, me)
+        )
+    except sqlite3.OperationalError:
+        return error(sqlite3.OperationalError)
     return SUCCESS
 
 
@@ -445,6 +564,41 @@ def processor():
                    "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
 
+    def get_challenged_tasks():
+        result = []
+        me = session['user']
+        try:
+            result = sqlite_get(
+                "SELECT challenged FROM users WHERE username = ?", (me,))
+            if result[0][0] == None or result[0][0] == "":
+                result = None
+            else:
+                result = result[0][0].split('|')
+                result.pop()
+        except sqlite3.OperationalError:
+            return error(sqlite3.OperationalError)
+        return result
+
+    def get_friends_tasks():
+        assert "user" in session
+        friends = get_friends()
+        try:
+            friends.remove(session["user"])
+        except KeyError:
+            pass
+        tasks = {}
+        for user in friends:
+            for group in get_common_groups(user):
+                task = sqlite_get(
+                    "SELECT name, points FROM tasks WHERE owner = ? AND groups = ?", (user, group))
+                arr = [{"task": name, "points": points}
+                       for name, points in task]
+                if user in tasks:
+                    tasks[user].extend(arr)
+                else:
+                    tasks[user] = arr
+        return tasks
+
     def get_hide_complete():
         assert "user" in session
         result = False
@@ -456,13 +610,8 @@ def processor():
 
     def get_leaders():
         assert "user" in session
-        result = sqlite_get(
-            "SELECT members FROM groups WHERE members LIKE ?", ("%'" + session["user"] + "'%",))
-        members = set()
-        for item in result:
-            members.update(literal_eval(item[0]))
         leaders = []
-        for user in members:
+        for user in get_friends():
             result = sqlite_get(
                 "SELECT points FROM users WHERE username = ?", (user,))[0][0]
             leaders.append({"name": user, "points": result})
