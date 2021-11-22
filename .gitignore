@@ -3,3 +3,4 @@
 *.db
 .DS_Store
 static/images
+static/aviation/fms/MCDU.key
