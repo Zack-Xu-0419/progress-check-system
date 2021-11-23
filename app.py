@@ -225,6 +225,14 @@ def tasks():
     return render_template("tasks.html")
 
 
+@app.route("/aviation", methods=Method.BOTH)
+@require_signin(True)
+@search_logout
+def aviation():
+    if "user" in session:
+        return render_template("aviation.html")
+
+
 @app.route("/search", methods=Method.BOTH)
 @require_signin(True)
 @search_logout

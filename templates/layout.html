@@ -11,7 +11,7 @@
     <style>
         body {
             background-image: url("{{get_active_background()}}");
-            background-size: cover;
+            background-size: auto;
             background-repeat: no-repeat;
         }
     </style>
@@ -87,7 +87,6 @@
         </nav>
     </div>
     <div class="blur-content-behind">
-        <!-- Ideally to be of class  class="blur-content-behind", but Modal pupup doesn't work when made that way-->
         {% block main %}{% endblock %}
     </div>
     {% block modal %}{% endblock %}
