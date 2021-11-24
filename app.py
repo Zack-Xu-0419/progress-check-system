@@ -2,7 +2,7 @@ import os
 import sqlite3
 from ast import literal_eval
 from base64 import b64encode
-from datetime import date
+from datetime import datetime
 from functools import wraps
 from io import BytesIO
 
@@ -402,7 +402,7 @@ def new_task():
     except ValueError:
         return error("\"Points\" must be a nonnegative integer.")
     try:
-        date.fromisoformat(deadline)
+        datetime.fromisoformat(deadline)
     except ValueError as err:
         return error("Deadline has invalid format: {}.".format(str(err)))
     sqlite_execute("INSERT INTO tasks (name, owner, groups, deadline, category, points, completed) VALUES (?, ?, ?, ?, ?, ?, false)",
@@ -562,14 +562,14 @@ def processor():
             return []
 
     def get_tasks():
-        def get_delta_days(deadline):
-            delta_date = date.fromisoformat(deadline) - date.today()
-            return delta_date.days
+        def get_delta_time(deadline):
+            delta_time = datetime.fromisoformat(deadline) - datetime.now()
+            return delta_time.seconds
         assert "user" in session
         tasks = sqlite_get(
             "SELECT name, groups, deadline, completed, points FROM tasks WHERE owner = ?", (session["user"],))
         result = [{"name": task[0], "groups": task[1],
-                   "deadline": task[2], "delta_days": get_delta_days(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
+                   "deadline": task[2], "delta_time": get_delta_time(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
         return result
 
     def get_challenged_tasks():

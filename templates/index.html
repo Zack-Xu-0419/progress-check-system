@@ -86,7 +86,7 @@ Main Page
                 </div> -->
 
                     {% if task["completed"] %}
-                    {% if get_hide_complete() == True %}
+                    {% if get_hide_complete() %}
                     <!-- if doesn't show complete -->
                     <li style="margin-left: -40px; color: blue; display: none;"
                         class="completedTask list-group-item justify-content-between align-items-center">
@@ -100,7 +100,7 @@ Main Page
                         {% endif %}
                         {{task["name"]}}
                         <div style="float:right" class="right">
-                            <small style="margin-right: 20px;">{{task["delta_days"]}}</small>
+                            <small style="margin-right: 20px;">{{task["delta_time"]}}</small>
                             <span style="margin-right: 20px;"
                                 class="points badge badge-primary badge-pill">{{task["points"]}}</span>
                             {% if task["completed"] %}
@@ -245,7 +245,7 @@ Main Page
                         {% endfor %}
                     </select>
                     <label for="deadline">Deadline - </label>
-                    <input required type="date" id="deadline" name="deadline" />
+                    <input required type="datetime" id="deadline" name="deadline" />
                     <input required type="text" list="categories" id="category" name="category"
                         placeholder="Category" />
                     <datalist id="categories">
