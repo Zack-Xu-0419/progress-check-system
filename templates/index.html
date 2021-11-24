@@ -11,7 +11,7 @@ Main Page
             <h4>Welcome, {{message}}</h4>
             {% if "user" in session %}
             <div>
-                {% if get_challenged_tasks() != None %}
+                {% if get_challenged_tasks() %}
                 <table>
                     <thead>
                         <tr>
@@ -27,7 +27,7 @@ Main Page
                         </tr>
                     </thead>
                     <tbody>
-                        {%for challenge in get_challenged_tasks()%}
+                        {% for challenge in get_challenged_tasks() %}
                         <tr>
                             <td>
                                 {{challenge.split('-')[0]}}
@@ -54,7 +54,7 @@ Main Page
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
                 Add a New Task
             </button>
-            {% if get_hide_complete() == True %}
+            {% if get_hide_complete() %}
             <input type="checkbox" id="hideCompleted" checked />
             {% else %}
             <input type="checkbox" id="hideCompleted" />

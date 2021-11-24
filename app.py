@@ -195,9 +195,6 @@ def settings():
             backgroundToDelete = sqlite_get(
                 f"SELECT id FROM '{table_name}' ORDER BY id ASC LIMIT 1"
             )[0][0]
-            print(
-                backgroundToDelete
-            )
             sqlite_execute(
                 f"DELETE FROM '{table_name}' WHERE id = {backgroundToDelete}")
             sqlite_execute(f"ALTER TABLE '{table_name}' DROP id")
