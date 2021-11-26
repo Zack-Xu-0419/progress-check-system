@@ -535,6 +535,14 @@ def complete_task():
     return SUCCESS
 
 
+@app.route("/api/aviation/mcduSave", methods=Method.POST)
+@api(Method.POST)
+def mcduSave():
+    print("request received")
+    print(request.json)
+    return SUCCESS
+
+
 @app.context_processor
 def processor():
     def get_all_backgrounds():
