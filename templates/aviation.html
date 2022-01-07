@@ -16,7 +16,6 @@ Aviation (A320) Themed Planner
             <img class="pwh" style="height: 25vh; margin-left: 30vh; position: absolute;"
                 src="../static/aviation/power/eng.png">
         </div>
-        <div id="pusher"></div>
         <div id="mcdu">
             <!-- 10 Side Buttons -->
             <button id="l1" class="mcduSideButton overlay" style="margin-top: 8vh; margin-left: 1vh;"></button>
@@ -40,7 +39,6 @@ Aviation (A320) Themed Planner
 
             <!-- The Letters... Oh this is going to take a while ... Nevermind, I did it using javascript-->
             <!-- The Four arrows... This is easier to do with HTML -->
-
             <button class="overlay mcduArrow" id="left" style="margin-top: 45vh; margin-left: 5.5vh;"></button>
             <button class="overlay mcduArrow" id="up" style="margin-top: 45vh; margin-left: 12vh;"></button>
             <button class="overlay mcduArrow" id="right" style="margin-top: 49.5vh; margin-left: 5.5vh;"></button>
@@ -48,6 +46,11 @@ Aviation (A320) Themed Planner
             <input id="input" class="overlay display"
                 style="z-index: 11; margin-top: 29vh; margin-left: 7.5vh; width: 35vh; height:4vh; border-radius: 10vh;" />
             <img style="height: 80vh; position: absolute;" src="../static/aviation/fms/mcdu.png">
+            <button id="reset" class="overlay" style="color:white; z-index: 12; margin-left: 80vh;">Reset</button>
+            <button id="loadwaypoint" class="overlay" style="color:white; z-index: 12;">Load Waypoint Data</button>
+            <p1 id="pageName" class="overlay display"
+                style="width: 50vh; font-size: 2vh; margin-top: 4vh; text-align: center;">
+            </p1>
         </div>
         <div style="flex: auto;" id="status">
         </div>
@@ -65,29 +68,30 @@ Aviation (A320) Themed Planner
                     PERF
                 </label>
             </div>
-            <div class="form-check"></div>
-            <input class="form-check-input" type="checkbox" value="" id="fuelSave">
-            <label class="form-check-label" style="color:white" for="flexCheckDefault">
-                FUEL
-            </label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="dirSave">
-            <label class="form-check-label" style="color:white" for="flexCheckDefault">
-                DIR
-            </label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="f_plnSave">
-            <label class="form-check-label" style="color:white" for="flexCheckDefault">
-                F_PLN
-            </label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="t/oapprSave">
-            <label class="form-check-label" style="color:white" for="flexCheckDefault">
-                T/O APPR
-            </label>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="fuelSave">
+                <label class="form-check-label" style="color:white" for="flexCheckDefault">
+                    FUEL
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="dirSave">
+                <label class="form-check-label" style="color:white" for="flexCheckDefault">
+                    DIR
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="f_plnSave">
+                <label class="form-check-label" style="color:white" for="flexCheckDefault">
+                    F_PLN
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="t/oapprSave">
+                <label class="form-check-label" style="color:white" for="flexCheckDefault">
+                    T/O APPR
+                </label>
+            </div>
         </div>
     </div>
 </div>
@@ -96,8 +100,51 @@ Aviation (A320) Themed Planner
 
 {% block script %}
 <script>
+    position = 0;
+    theme = "aviation";
+    currentDisplay = {
+        "init": {
+            "left": [
 
-    //
+            ],
+            "right": [
+
+            ],
+        },
+        "perf": {
+
+        },
+        "initialized": [
+
+        ],
+        "backendActionRequest": "",
+        "active": "",
+        "info": [],
+        "saves": []
+    }
+
+
+    $.ajax({
+        url: "/api/aviation/mcduLoad",
+        method: "GET",
+        success: function (response) {
+            console.log(response)
+            currentDisplay = response["aviation"]
+            // Initialize Saving States
+            for (i = 0; i < currentDisplay.saves.length; i++) {
+                console.log(currentDisplay.saves[i])
+                if (currentDisplay.saves[i] != "t/oapprSave") {
+                    $("#" + currentDisplay.saves[i]).prop("checked", true);
+                }
+                else {
+                    toappr = document.getElementById("t/oapprSave")
+                    toappr.checked = true
+                }
+            }
+            reloadContent();
+            console.log(currentDisplay.active)
+        }
+    })
 
     var isMobile = false; //initiate as false
     // device detection
@@ -134,7 +181,7 @@ Aviation (A320) Themed Planner
     }
     //Very Important - variables for mcdu!
 
-    airplaneModes = {
+    const airplaneModes = {
         "init": {
             "left": [
                 { "rte": "INPUT TARGET" },
@@ -148,36 +195,58 @@ Aviation (A320) Themed Planner
         },
         "perf": {
             "left": [
-                { "rte": "INPUT TARGET" },
-                { "altn": "INPUT SECONDARY TARGET" },
-                { "flt nbr": "INPUT ANY NUMBER YOU WANT" },
-                { "cost index": "INPUT SCORE MULTIPLIER" },
+                { "v1": "INPUT POINT TO GATHER BEFORE STARTING YOUR DAY" },
+                { "vr": "INPUT POINT TO GATHER THAT WILL INITIATE TAKEOFF" },
+                { "v2": "INPUT MINIMUM POINTS FOR THE DAY" },
+                { "rwy": "INPUT RUNWAY NUMBER (ANYWHERE, THIS IS USELESS)" },
+                { "to1/pt": "INPUT FIRST TASK/POINTS" },
             ],
             "right": [
-                { "from/to": "INPUT START/END TIME" }
+                { "to2/pt": "INPUT SECOND TASK/POINTS" },
+                { "to3/pt": "INPUT THIRD TASK/POINTS" },
+                { "to4/pt": "INPUT FOURTH TASK/POINTS" },
+                { "to5/pt": "INPUT FIFTH TASK/POINTS" },
+                { "to6/pt": "INPUT SIXTH TASK/POINTS" },
             ]
         },
-    }
-
-    currentDisplay = {
-        "init": {
+        "fuel": {
             "left": [
-
+                { "fob": "FUEL (MINUMUM POINTS)" }
             ],
             "right": [
 
+            ]
+        },
+        "dir": {
+            "left": [
+                { "waypoint": "INPUT WAYPOINTS/TIME" },
+                { "f-pln wpt": "WAYPOINTS BELOW" },
             ],
+            "right": [
+                { "": "" },
+                { "direct to": "CHECK TASK OFF" },
+            ]
         },
-        "perf": {
-
+        "f_pln": {
+            "left": [
+                { "at": "" }
+            ],
+            "right": [
+                { "time": "" }
+            ]
         },
-        "initialized": [
-
-        ],
-        "backendActionRequest": "",
-        "active": "",
-        "saves": []
+        "t/oappr": {
+            "left": [
+                { "to": "take off" }
+            ],
+            "right": [
+                { "appr": "APPROACH" }
+            ]
+        },
+        "scroll": 0,
+        "info": []
     }
+
 
     // Handle State Save Form Checks
     $("input").click(function () {
@@ -195,6 +264,7 @@ Aviation (A320) Themed Planner
                 currentDisplay.saves = currentDisplay.saves.filter(e => e !== itemClicked)
                 console.log(currentDisplay.saves.filter(e => e !== itemClicked));
             }
+            saveContent();
         }
 
     })
@@ -273,12 +343,26 @@ Aviation (A320) Themed Planner
             parent.appendChild(lineText);
         }
     }
-    $(".mcduSideButton, .menuButton, .mcduLetter, .mcduArrow, .mcduNumber").click(function () {
-        console.log(this.id)
-    })
-    $(".mcduLetter, .mcduNumber").click(function () {
+    $(".mcduLetter, .mcduNumber, .mcduArrow").click(function () {
         if (this.id != "C") {
-            $("#input").val($("#input").val() + this.id)
+            if (this.id == "S") {
+                $("#input").val($("#input").val() + " ")
+            }
+            else {
+                console.log(this.id)
+                if (this.id == "down") {
+                    position += 1
+                    reloadContent()
+                }
+                else if (this.id == "up") {
+                    if (position > 0)
+                        position -= 1
+                    reloadContent()
+                }
+                else {
+                    $("#input").val($("#input").val() + this.id)
+                }
+            }
         }
         else {
             string = $("#input").val();
@@ -317,45 +401,154 @@ Aviation (A320) Themed Planner
             initialData = airplaneModes[requestMenu]
             // Update "CurrentDisplay"
             currentDisplay[requestMenu] = initialData
+            currentDisplay.initialized.push(requestMenu)
         }
+        console.log(airplaneModes)
+        reloadContent();
+        saveContent();
+    })
+
+    activeThing = ""
+
+    function saveContent() {
+        $.ajax({
+            url: "/api/aviation/mcduSave",
+            data: JSON.stringify(currentDisplay),
+            success: function (response) {
+            },
+        });
+    }
+    function confirmation(message, action, whatDo, information) {
+        console.log(message)
+        if (message == undefined) {
+            // If No message, ask user what do?
+            // get the bottom two displays
+            rightDisplay = $("#ra5")
+            leftDisplay = $("#la5")
+            rightDisplay.css("color", "yellow")
+            leftDisplay.css("color", "yellow")
+            leftDisplay.css("font-size", "2vh")
+            rightDisplay.css("font-size", "2vh")
+            leftDisplay.html("erase")
+            rightDisplay.html("insert")
+            activeThing = information
+            // The following two lines is run to clear the small text under the insert and empty, 
+            // otherwise when clicking insert or complete, the program will think it's checking off another task
+            $("#lb5").text("")
+            $("#rb5").text("")
+        }
+        else {
+            if (action == "insert") {
+                // proceed with action
+                console.log(activeThing)
+                whatDo(activeThing);
+            }
+            // Clear the confirmation menu
+            rightDisplay = $("#ra5")
+            leftDisplay = $("#la5")
+            rightDisplay.css("color", "white")
+            leftDisplay.css("color", "white")
+            leftDisplay.css("font-size", "1.2vh")
+            rightDisplay.css("font-size", "1.2vh")
+            leftDisplay.html("")
+            rightDisplay.html("")
+        }
+    }
+
+    function reloadContent() {
+        requestMenu = currentDisplay.active
         // Initialize screen on the left side
-        for (i = 0; i < 5; i++) {
+        // Handle the initation if never clicked this menu
+        // if (requestMenu == "f_pln") {
+        //     console.log(true)
+        //     $.ajax({
+        //         url: "/api/get_tasks",
+        //         data: JSON.stringify(currentDisplay),
+        //         success: function (response) {
+        //             // Get the response into MCDU Display
+        //             for (i = 0; i < response.length; i++) {
+        //                 // Add this specific task
+        //                 // Get Time in the day
+        //                 time = response[i].deadline
+        //                 timeOfDay = time.substr(time.indexOf("T") + 1)
+        //                 currentDisplay.f_pln.left[i + 1] = { " ": response[i]["name"] }
+        //                 currentDisplay.f_pln.right[i + 1] = { " ": timeOfDay }
+        //                 console.log(currentDisplay)
+        //             }
+        //         },
+        //     });
+        // }
+        if (currentDisplay[requestMenu] == undefined) {
+            currentDisplay[requestMenu] = airplaneModes[requestMenu]
+        }
+        // Change the MenuPage indication at the top
+        $("#pageName").text(requestMenu)
+
+        // Check if requestMenu.length - position + 5 is positive, if not, position = position - 1
+        leftMenu = Object.keys(currentDisplay[requestMenu]["left"])
+        if (Object.keys(leftMenu).length - (position + 5) < 0) {
+            if (Object.keys(leftMenu).length > 5) {
+                position = Object.keys(leftMenu).length - 5
+            }
+            else {
+                position = 0;
+            }
+        }
+
+        for (i = position; i < position + 5; i++) {
             if (currentDisplay[requestMenu].left[i] == undefined) {
                 $("#la" + (i + 1).toString()).text("")
                 $("#lb" + (i + 1).toString()).text("")
             }
             else {
                 theKey = Object.keys(currentDisplay[requestMenu].left[i])[0]
-                if (airplaneModes[requestMenu].left[i][theKey].includes("INPUT")) {
-                    $("#lb" + (i + 1).toString()).addClass("input")
+                try {
+                    if (airplaneModes[requestMenu].left[i][theKey].includes("INPUT")) {
+                        $("#lb" + (i + 1).toString()).addClass("input")
+                        $("#lb" + (i + 1).toString()).removeClass("option")
+                    }
+                    else {
+                        $("#lb" + (i + 1).toString()).addClass("option")
+                        $("#lb" + (i + 1).toString()).removeClass("input")
+                    }
                 }
-                else {
-                    $("#lb" + (i + 1).toString()).addClass("option")
+                catch {
+
                 }
-                $("#la" + (i + 1).toString()).text(theKey)
-                $("#lb" + (i + 1).toString()).text(currentDisplay[requestMenu].left[i][theKey])
+                $("#la" + (i + 1 - position).toString()).text(theKey)
+                $("#lb" + (i + 1 - position).toString()).text(currentDisplay[requestMenu].left[i][theKey])
             }
         }
         // Initialize screen on the right side
-        for (i = 0; i < 5; i++) {
+        for (i = position; i < position + 5; i++) {
             if (currentDisplay[requestMenu].right[i] == undefined) {
                 $("#ra" + (i + 1).toString()).text("")
                 $("#rb" + (i + 1).toString()).text("")
             }
             else {
                 theKey = Object.keys(currentDisplay[requestMenu].right[i])[0]
-                if (airplaneModes[requestMenu].right[i][theKey].includes("INPUT")) {
-                    $("#rb" + (i + 1).toString()).addClass("input")
+                try {
+                    if (currentDisplay[requestMenu].right[i][theKey].includes("INPUT")) {
+                        $("#rb" + (i + 1).toString()).addClass("input")
+                        $("#rb" + (i + 1).toString()).removeClass("option")
+                    }
+                    else {
+                        $("#rb" + (i + 1).toString()).addClass("option")
+                        $("#rb" + (i + 1).toString()).removeClass("input")
+                    }
                 }
-                else {
-                    $("#rb" + (i + 1).toString()).addClass("option")
+                catch {
+
                 }
-                $("#ra" + (i + 1).toString()).text(theKey)
-                $("#rb" + (i + 1).toString()).text(currentDisplay[requestMenu].right[i][theKey])
+                $("#ra" + (i + 1 - position).toString()).text(theKey)
+                $("#rb" + (i + 1 - position).toString()).text(currentDisplay[requestMenu].right[i][theKey])
             }
         }
-    })
+    }
 
+    function getPosition(string, subString, index) {
+        return string.split(subString, index).join(subString).length;
+    }
     //actions with the side panels
     $(".mcduSideButton").click(function () {
         // Check display element and get which one
@@ -363,40 +556,282 @@ Aviation (A320) Themed Planner
         // Check if the field is "input" class, if it is, change the bottom text
         side = requestButton.substr(0, 1)
         number = requestButton.substr(1, 1)
-        if ($("#" + side + "b" + number).hasClass("input") && ($("#input").val() != "") && ($("#input").val() != "METHOD NOT ALLOWED")) {
-            side_full_name = "left"
-            if (side == "r") {
-                side_full_name = "right"
-            }
+        display1 = $("#" + side + "a" + number)
+        display2 = $("#" + side + "b" + number)
+        side_full_name = "left"
+        if (side == "r") {
+            side_full_name = "right"
+        }
+        if (display2.hasClass("input") && ($("#input").val() != "") && ($("#input").val() != "METHOD NOT ALLOWED")) {
             inputText = $('#input').val()
             // console.log(currentDisplay[currentDisplay.active][side_full_name][0])
             // console.log({ "from/to": "INPUT TIME" })
             item = currentDisplay[currentDisplay.active][side_full_name][number - 1]
             currentDisplay[currentDisplay.active][side_full_name][number - 1][Object.keys(item)[0]] = inputText
-            console.log(currentDisplay)
-            $("#" + side + "b" + number).text(inputText)
+            // console.log(currentDisplay)
+            display2.text(inputText)
             //Clear input
             $("#input").val("")
         }
-
         else {
-            $("#input").val("METHOD NOT ALLOWED")
+            // If option is an Input
+            // Page - Specific Tasks
+            switch ($("#pageName").html()) {
+                case "takeoff":
+                    chosenDisplay = currentDisplay.takeoff[side_full_name][number - 1]
+                    if (side == 'l') {
+                        if (Object.keys(chosenDisplay)[0].includes("*")) {
+                            title = Object.keys(chosenDisplay)[0];
+                            content = chosenDisplay[title]
+                            delete chosenDisplay[title];
+                            chosenDisplay[title.substr(0, title.length - 1)] = content;
+                        }
+                        else {
+                            title = Object.keys(chosenDisplay)[0];
+                            content = chosenDisplay[title]
+                            delete chosenDisplay[title];
+                            chosenDisplay[title + "*"] = content;
+                        }
+                        reloadContent();
+                    }
+                    else {
+                        if (Object.keys(chosenDisplay)[0].includes("RTO")) {
+                            // Tally the point in currentDisplay
+                            // Loop through the whole dictionary of takeoff left
+                            totalPoint = 0;
+                            // console.log(Object.keys(currentDisplay.takeoff.left).length)
+                            for (i = 0; i < Object.keys(currentDisplay.takeoff.left).length; i++) {
+                                key = Object.keys(currentDisplay.takeoff.left[i]);
+                                data = currentDisplay.takeoff.left[i][key]
+                                completed = key[0].includes("*")
+                                if (completed)
+                                    totalPoint += parseInt(data.substr(data.indexOf("/") + 1));
+                                // console.log(totalPoint)
+                                // console.log(key)
+                                // console.log(data)
+                            }
+                            // if key of the item in the dictionary include *, get the point that it represent
+                            // add point that it represent 
+
+                            currentDisplay.backendActionRequest = totalPoint
+                            $.ajax({
+                                url: "/api/addPoints",
+                                data: JSON.stringify(currentDisplay),
+                                success: function (response) {
+                                    alert("Submitted")
+                                },
+                            });
+
+                        }
+                    }
+                    break
+                case "t/oappr":
+                    if (display1.html() == "to") {
+                        // Update Screen
+                        if (currentDisplay["perf"] != undefined) {
+                            currentDisplay["takeoff"] = {
+                                "left": {
+
+                                },
+                                "right": {
+                                    0: { "RTO": "submit" }
+                                }
+                            }
+                            currentDisplay["takeoff"]["left"][0] = currentDisplay["perf"]["left"][4]
+                            for (i = 0; i < currentDisplay["perf"]["right"].length; i += 1) {
+                                currentDisplay["takeoff"]["left"][i + 1] = currentDisplay["perf"]["right"][i]
+                            }
+                            //Switch Active Page to takeoff Page
+                            currentDisplay.active = "takeoff";
+                            reloadContent();
+                        }
+                        else {
+                            $("#input").val("Please Init Performance Page")
+                        }
+                    }
+                    else if (display1.html() == "appr") {
+                        // Get Points for today
+                        // Loop through currentDisplay["f_pln"]
+                        tasks = currentDisplay.f_pln.left
+                        keys = Object.keys(tasks)
+                        totalPoints = 0
+
+                        // Get penalties for each scenario
+                        penalties = currentDisplay.init.left["1"]["altn"]
+                        one = penalties.substr(0, getPosition(penalties, "/", 1))
+                        two = penalties.substr(getPosition(penalties, "/", 1) + 1, getPosition(penalties, "/", 1))
+                        three = penalties.substr(getPosition(penalties, "/", 2) + 1)
+                        for (i = 1; i < tasks.length; i++) {
+                            item = tasks[keys[i]][""]
+                            points = parseInt(item.substr(item.indexOf("/") + 1).replace("*", "").replace("!", "").replace("-", "").replace("+", ""))
+                            console.log(item)
+                            console.log(points)
+                            if (item.includes("*")) {
+                                totalPoints += points
+                            }
+                            else if (item.includes("-")) {
+                                totalPoints += points * one
+                            }
+                            else if (item.includes("+")) {
+                                totalPoints += points * two
+                            }
+                            else if (item.includes("!")) {
+                                totalPoints += points * three
+                            }
+                        }
+                        currentDisplay.backendActionRequest = totalPoints
+                        // Set appr of currentdisplay:
+                        currentDisplay["appr"] = {
+                            "left": [
+                                currentDisplay.fuel.left[0],
+                                currentDisplay.init.left[3],
+                                currentDisplay.init.left[2]
+                            ],
+                            "right": [
+                                { "Points Today": totalPoints },
+                                { "land": "" }
+                            ]
+                        }
+                        currentDisplay.active = "appr"
+                        reloadContent()
+                        saveContent()
+                        // TODO: Handle Approach
+                    }
+                    break;
+                case "f_pln":
+                    console.log($("#lb" + number).html())
+                    task = $("#lb" + number).html()
+
+                    if (display1.html() == "insert" || display1.html() == "erase") {
+                        confirmation("", display1.html(), function (theDisplay) {
+                            // Get differences between time now and next task's time:
+                            d1 = Date.now();
+                            current = currentDisplay.f_pln.left[theDisplay - 1 + position]
+                            currentThing = current[Object.keys(current)[0]]
+                            try {
+                                next = currentDisplay.f_pln.left[parseInt(theDisplay) + position]
+                                nextThing = next[Object.keys(next)[0]]
+                                nextThing = nextThing.replace("*", "").replace("!", "").replace("-", "").replace("+", "")
+                                nextThing = nextThing.substr(0, nextThing.indexOf("/"))
+                                request = { "task": nextThing }
+                                console.log(request)
+                                $.ajax({
+                                    url: "api/getDueDate",
+                                    data: JSON.stringify(request),
+                                    success: function (response) {
+                                        d2 = new Date(response).getTime()
+                                        difference = d2 - d1
+                                        console.log(response)
+                                        console.log(difference)
+                                        // If Late
+                                        if (difference < 0) {
+                                            absoluteD = Math.abs(difference)
+                                            if (absoluteD < 1200000) {
+                                                currentDisplay.f_pln.left[theDisplay - 1 + position] = { "": currentThing + "-" }
+                                            }
+                                            else if (absoluteD > 1200000 && absoluteD < 3600000) {
+                                                currentDisplay.f_pln.left[theDisplay - 1 + position] = { "": currentThing + "+" }
+                                            }
+                                            else {
+                                                currentDisplay.f_pln.left[theDisplay - 1 + position] = { "": currentThing + "!" }
+                                            }
+                                        }
+                                        else {
+                                            currentDisplay.f_pln.left[theDisplay - 1 + position] = { "": currentThing + "*" }
+                                        }
+                                        reloadContent()
+                                        saveContent()
+                                    }
+                                })
+                            }
+                            catch {
+                                currentDisplay.f_pln.left[theDisplay - 1 + position] = { "": currentThing + "*" }
+                                reloadContent()
+                                saveContent()
+                                // if this is the last task of the day
+                            }
+                        })
+                    }
+                    else if (task != "" && !(task.includes("!") || task.includes("*") || task.includes("-") || task.includes("+"))) {
+                        // If there is a task, prompt the user to confirm, upon confirmation, add a start to the end of the task to mark it off.
+                        confirmation(undefined, undefined, undefined, number)
+                    }
+                    break;
+                case "appr":
+                    if (display1.html() == "land") {
+                        console.log(currentDisplay.appr.right[0]["Points Today"])
+                        confirmation(undefined, undefined, undefined, currentDisplay.appr.right[0]["Points Today"])
+                    }
+                    else if (display1.html() == "insert" || display1.html() == "empty") {
+                        console.log("Hi")
+                        confirmation("", "insert", function () {
+                            $.ajax({
+                                url: "/api/addPoints",
+                                data: JSON.stringify(currentDisplay),
+                                success: function (response) {
+                                    for (i = 1; i < currentDisplay.f_pln.left.length; i++) {
+                                        theTask = currentDisplay.f_pln.left[i][""]
+                                        if (theTask.includes("*") || theTask.includes("*") || theTask.includes("-") || theTask.includes("+")) {
+                                            currentDisplay.info[i] = theTask.substr(0, theTask.indexOf("/"))
+                                        }
+                                    }
+                                    console.log(currentDisplay.info)
+                                    $.ajax({
+                                        url: "/api/deleteTask",
+                                        data: JSON.stringify(currentDisplay),
+                                        success: function (response) {
+                                            console.log("DELETED Tasks and added points")
+                                            currentDisplay.active = "init"
+                                            saveContent()
+                                            reloadContent()
+                                        },
+                                    });
+                                },
+                            });
+                        })
+                    }
+            }
         }
-
-        $.ajax({
-            url: "/api/aviation/mcduSave",
-            data: JSON.stringify(currentDisplay),
-            success: function (response) {
-                if (response.success) {
-                    alert("Operation successful.");
-                } else {
-                    alert(response.message);
-                }
-            },
-        });
-
+        saveContent()
         return false;
         // send request to backend depending on which class it is
+    })
+
+
+    $("#reset").click(function () {
+        for (const [key, value] of Object.entries(airplaneModes)) {
+            currentDisplay[key] = airplaneModes[key]
+        }
+        currentDisplay[takeoff] = {}
+        saveContent()
+        reloadContent()
+    })
+
+    $("#loadwaypoint").click(function () {
+        $.ajax({
+            url: "/api/get_tasks",
+            data: JSON.stringify(currentDisplay),
+            success: function (response) {
+                console.log('OH F')
+                // Get the response into MCDU Display
+                // Reset MCDU Display
+                currentDisplay.dir = airplaneModes.dir;
+                currentDisplay.f_pln = airplaneModes.f_pln;
+                for (i = 0; i < response.length; i++) {
+                    // Add this specific task
+                    // Get Time in the day
+                    time = response[i].deadline
+                    timeOfDay = time.substr(time.indexOf("T") + 1)
+                    console.log(response[i]["points"])
+                    currentDisplay.dir.left[i + 2] = { "": response[i]["name"] + "/" + response[i]["points"] }
+                    currentDisplay.dir.right[i + 2] = { "at": timeOfDay }
+                    currentDisplay.f_pln.left[i + 1] = { "": response[i]["name"] + "/" + response[i]["points"] }
+                    currentDisplay.f_pln.right[i + 1] = { "": timeOfDay }
+                }
+                saveContent()
+                reloadContent()
+            },
+        });
     })
 </script>
 {% endblock %}

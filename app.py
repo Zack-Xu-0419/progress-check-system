@@ -85,6 +85,18 @@ def get_points():
         "SELECT points FROM users WHERE username = ?", (session["user"],))[0][0]
 
 
+def get_task():
+    def get_delta_time(deadline):
+        delta_time = datetime.fromisoformat(deadline) - datetime.now()
+        return delta_time.seconds
+    assert "user" in session
+    tasks = sqlite_get(
+        "SELECT name, groups, deadline, completed, points FROM tasks WHERE owner = ?", (session["user"],))
+    result = [{"name": task[0], "groups": task[1],
+               "deadline": task[2], "delta_time": get_delta_time(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
+    return result
+
+
 def error(message):
     return json.dumps({"success": False, "message": message})
 
@@ -95,7 +107,7 @@ def init():
     # FIXME: Restrict access to this path.
     os.makedirs(IMAGES_DIR, exist_ok=True)
     sqlite_execute(
-        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL, challenged TEXT)")
+        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, points INT, private BOOL, challenged TEXT, themeData TEXT)")
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, members TEXT, member_points TEXT, pending TEXT)")
     # Should we use usernames to refer to a user, or id's?
@@ -103,6 +115,41 @@ def init():
         "CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, owner TEXT, active BOOL)")
     sqlite_execute(
         "CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, owner TEXT, groups TEXT, deadline TEXT, category TEXT, points INT, completed BOOL)")
+
+
+def updateThemeData(theme, input, partsToSave):
+    # receive Object, extract which views to save, and only save those as a string in the Database
+    input = input
+    finalSave = {}
+    # If no specific parts are specified to save, save the whole thing.
+    try:
+        toSave = input["saves"]
+    finally:
+        finalSave = request.json
+
+    newData = {
+
+    }
+    # Get existing Theme Data
+    existingData = sqlite_get(
+        "SELECT themeData FROM users WHERE username = ?", (session["user"],))[0][0]
+    if(existingData == None or existingData == ""):
+        newData[theme] = {}
+    else:
+        existingData = json.loads(existingData)
+        # Update Theme Data
+        newData = existingData
+    # newData[theme] = finalSave
+    for menu in toSave:
+        actualMenuName = menu[0: -4]
+        newData[theme][actualMenuName] = (input[actualMenuName])
+    for i in partsToSave:
+        newData[theme][i] = input[i]
+    # Send it Back to DB
+
+    sqlite_execute(
+        "UPDATE users SET themeData = ? WHERE username = ?", (str(json.dumps(newData)), session["user"]))
+    return 0
 
 
 app = Flask(__name__)
@@ -538,9 +585,50 @@ def complete_task():
 @app.route("/api/aviation/mcduSave", methods=Method.POST)
 @api(Method.POST)
 def mcduSave():
-    print("request received")
-    print(request.json)
+    result = updateThemeData("aviation", request.json, [
+                             'saves', 'active', 'backendActionRequest', 'initialized', 'takeoff', 'info'])
+    if result == 0:
+        return SUCCESS
+    else:
+        return error(1)
+
+
+@app.route("/api/aviation/mcduLoad", methods=Method.GET)
+def mcduLoad():
+    return sqlite_get("SELECT themeData FROM users WHERE username = ?", (session["user"], ))[0][0]
+
+
+@app.route("/api/addPoints", methods=Method.POST)
+def addPoints():
+    # Add Point to SQL Database
+    sqlite_execute("UPDATE users SET points = ? WHERE username = ?", (int((sqlite_get(
+        "SELECT points FROM users WHERE username = ?", (session["user"], ))[0][0] + request.json["backendActionRequest"])), session["user"]))
     return SUCCESS
+
+# Accept an array of String task to delete.
+
+
+@app.route("/api/deleteTask", methods=Method.POST)
+def deleteTask():
+    print(request.json["info"])
+    for i in request.json["info"]:
+        sqlite_execute("DELETE FROM tasks WHERE owner = ? AND name = ?",
+                       (session["user"], i))
+    return SUCCESS
+
+
+@app.route("/api/getDueDate", methods=Method.BOTH)
+def getDueDate():
+    taskName = request.json["task"]
+    task = sqlite_get(
+        "SELECT deadline FROM tasks WHERE owner = ? AND name = ?", (session["user"], taskName))[0][0]
+    return json.dumps(task)
+
+
+@app.route("/api/get_tasks", methods=Method.POST)
+def api_get_tasks():
+    print(get_task())
+    return json.dumps(get_task())
 
 
 @app.context_processor
@@ -567,15 +655,7 @@ def processor():
             return []
 
     def get_tasks():
-        def get_delta_time(deadline):
-            delta_time = datetime.fromisoformat(deadline) - datetime.now()
-            return delta_time.seconds
-        assert "user" in session
-        tasks = sqlite_get(
-            "SELECT name, groups, deadline, completed, points FROM tasks WHERE owner = ?", (session["user"],))
-        result = [{"name": task[0], "groups": task[1],
-                   "deadline": task[2], "delta_time": get_delta_time(task[2]), "completed": task[3], "points": task[4]} for task in tasks]
-        return result
+        return get_task()
 
     def get_challenged_tasks():
         result = []
