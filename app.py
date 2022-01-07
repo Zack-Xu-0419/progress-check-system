@@ -147,6 +147,7 @@ def updateThemeData(theme, input, partsToSave):
         newData[theme][i] = input[i]
     # Send it Back to DB
 
+    print(newData)
     sqlite_execute(
         "UPDATE users SET themeData = ? WHERE username = ?", (str(json.dumps(newData)), session["user"]))
     return 0
@@ -595,7 +596,15 @@ def mcduSave():
 
 @app.route("/api/aviation/mcduLoad", methods=Method.GET)
 def mcduLoad():
-    return sqlite_get("SELECT themeData FROM users WHERE username = ?", (session["user"], ))[0][0]
+    result = sqlite_get(
+        "SELECT themeData FROM users WHERE username = ?", (session["user"], ))[0][0]
+    print(result)
+    if result == None:
+        print("A")
+        return {"Status": "no data"}
+    else:
+        print("B")
+        return result
 
 
 @app.route("/api/addPoints", methods=Method.POST)

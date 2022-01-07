@@ -128,21 +128,30 @@ Aviation (A320) Themed Planner
         url: "/api/aviation/mcduLoad",
         method: "GET",
         success: function (response) {
-            console.log(response)
-            currentDisplay = response["aviation"]
-            // Initialize Saving States
-            for (i = 0; i < currentDisplay.saves.length; i++) {
-                console.log(currentDisplay.saves[i])
-                if (currentDisplay.saves[i] != "t/oapprSave") {
-                    $("#" + currentDisplay.saves[i]).prop("checked", true);
+            console.log(response["Status"])
+            if (response["Status"] != "no data") {
+                currentDisplay = response["aviation"]
+                // Initialize Saving States
+                for (i = 0; i < currentDisplay.saves.length; i++) {
+                    console.log(currentDisplay.saves[i])
+                    if (currentDisplay.saves[i] != "t/oapprSave") {
+                        $("#" + currentDisplay.saves[i]).prop("checked", true);
+                    }
+                    else {
+                        toappr = document.getElementById("t/oapprSave")
+                        toappr.checked = true
+                    }
                 }
-                else {
-                    toappr = document.getElementById("t/oapprSave")
-                    toappr.checked = true
+                reloadContent();
+                console.log(currentDisplay.active)
+
+            }
+            else {
+
+                for (const [key, value] of Object.entries(airplaneModes)) {
+                    currentDisplay[key] = airplaneModes[key]
                 }
             }
-            reloadContent();
-            console.log(currentDisplay.active)
         }
     })
 
@@ -411,6 +420,9 @@ Aviation (A320) Themed Planner
     activeThing = ""
 
     function saveContent() {
+        if (currentDisplay.takeoff == undefined) {
+            currentDisplay.takeoff = { "left": "" }
+        }
         $.ajax({
             url: "/api/aviation/mcduSave",
             data: JSON.stringify(currentDisplay),
